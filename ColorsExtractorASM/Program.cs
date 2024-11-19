@@ -1,3 +1,5 @@
+﻿using System.Runtime.InteropServices;
+
 namespace ColorsExtractorASM
 {
     internal static class Program
