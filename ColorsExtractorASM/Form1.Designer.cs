@@ -37,9 +37,12 @@
             library_groupBox = new GroupBox();
             x64_button = new RadioButton();
             asm_button = new RadioButton();
-            label1 = new Label();
+            title = new Label();
             photo_infos_chooser = new ComboBox();
             info_chooser_label = new Label();
+            run_simple = new Button();
+            ms_counter_run_simp = new Label();
+            run_with_everything_button = new Button();
             ((System.ComponentModel.ISupportInitialize)pictureBox1).BeginInit();
             ((System.ComponentModel.ISupportInitialize)trackBar1).BeginInit();
             library_groupBox.SuspendLayout();
@@ -68,7 +71,6 @@
             pictureBox1.SizeMode = PictureBoxSizeMode.CenterImage;
             pictureBox1.TabIndex = 1;
             pictureBox1.TabStop = false;
-            pictureBox1.Click += pictureBox1_Click;
             // 
             // trackBar1
             // 
@@ -85,7 +87,6 @@
             threads_label.Size = new Size(107, 15);
             threads_label.TabIndex = 3;
             threads_label.Text = "Number of threads";
-            threads_label.Click += label1_Click;
             // 
             // threads_number
             // 
@@ -95,6 +96,7 @@
             threads_number.Size = new Size(13, 15);
             threads_number.TabIndex = 4;
             threads_number.Text = "1";
+           // threads_number.Click += threads_number_Click;
             // 
             // library_groupBox
             // 
@@ -106,7 +108,7 @@
             library_groupBox.TabIndex = 5;
             library_groupBox.TabStop = false;
             library_groupBox.Text = "Choose the library";
-            library_groupBox.Enter += library_groupBox_Enter;
+           //library_groupBox.Enter += library_groupBox_Enter;
             // 
             // x64_button
             // 
@@ -129,18 +131,18 @@
             asm_button.TabStop = true;
             asm_button.Text = "Asm";
             asm_button.UseVisualStyleBackColor = true;
-            asm_button.CheckedChanged += radioButton1_CheckedChanged;
+            //asm_button.CheckedChanged += radioButton1_CheckedChanged;
             // 
-            // label1
+            // title
             // 
-            label1.AutoSize = true;
-            label1.Font = new Font("Stencil", 30F, FontStyle.Italic, GraphicsUnit.Point, 0);
-            label1.ForeColor = Color.Purple;
-            label1.Location = new Point(202, 9);
-            label1.Name = "label1";
-            label1.Size = new Size(398, 47);
-            label1.TabIndex = 6;
-            label1.Text = "Colors Extractor";
+            title.AutoSize = true;
+            title.Font = new Font("Stencil", 30F, FontStyle.Italic, GraphicsUnit.Point, 0);
+            title.ForeColor = Color.Purple;
+            title.Location = new Point(202, 9);
+            title.Name = "title";
+            title.Size = new Size(398, 47);
+            title.TabIndex = 6;
+            title.Text = "Colors Extractor";
             // 
             // photo_infos_chooser
             // 
@@ -149,7 +151,7 @@
             photo_infos_chooser.Name = "photo_infos_chooser";
             photo_infos_chooser.Size = new Size(157, 23);
             photo_infos_chooser.TabIndex = 7;
-            photo_infos_chooser.SelectedIndexChanged += photo_infos_chooser_SelectedIndexChanged;
+            //photo_infos_chooser.SelectedIndexChanged += photo_infos_chooser_SelectedIndexChanged;
             // 
             // info_chooser_label
             // 
@@ -159,15 +161,47 @@
             info_chooser_label.Size = new Size(153, 30);
             info_chooser_label.TabIndex = 8;
             info_chooser_label.Text = "What do you want to know \nabout this photo?";
+            //info_chooser_label.Click += info_chooser_label_Click;
+            // 
+            // run_simple
+            // 
+            run_simple.Location = new Point(638, 87);
+            run_simple.Name = "run_simple";
+            run_simple.Size = new Size(87, 25);
+            run_simple.TabIndex = 9;
+            run_simple.Text = "Run";
+            run_simple.UseVisualStyleBackColor = true;
+            // 
+            // ms_counter_run_simp
+            // 
+            ms_counter_run_simp.AutoSize = true;
+            ms_counter_run_simp.Location = new Point(667, 115);
+            ms_counter_run_simp.Name = "ms_counter_run_simp";
+            ms_counter_run_simp.Size = new Size(29, 15);
+            ms_counter_run_simp.TabIndex = 10;
+            ms_counter_run_simp.Text = "0ms";
+            //ms_counter_run_simp.Click += label2_Click;
+            // 
+            // run_with_everything_button
+            // 
+            run_with_everything_button.Location = new Point(638, 139);
+            run_with_everything_button.Name = "run_with_everything_button";
+            run_with_everything_button.Size = new Size(87, 25);
+            run_with_everything_button.TabIndex = 11;
+            run_with_everything_button.Text = "Test";
+            run_with_everything_button.UseVisualStyleBackColor = true;
             // 
             // Form1
             // 
             AutoScaleDimensions = new SizeF(7F, 15F);
             AutoScaleMode = AutoScaleMode.Font;
             ClientSize = new Size(800, 450);
+            Controls.Add(run_with_everything_button);
+            Controls.Add(ms_counter_run_simp);
+            Controls.Add(run_simple);
             Controls.Add(info_chooser_label);
             Controls.Add(photo_infos_chooser);
-            Controls.Add(label1);
+            Controls.Add(title);
             Controls.Add(library_groupBox);
             Controls.Add(threads_number);
             Controls.Add(threads_label);
@@ -195,8 +229,11 @@
         private GroupBox library_groupBox;
         private RadioButton asm_button;
         private RadioButton x64_button;
-        private Label label1;
+        private Label title;
         private ComboBox photo_infos_chooser;
         private Label info_chooser_label;
+        private Button run_simple;
+        private Label ms_counter_run_simp;
+        private Button run_with_everything_button;
     }
 }
