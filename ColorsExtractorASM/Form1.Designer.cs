@@ -96,7 +96,6 @@
             threads_number.Size = new Size(13, 15);
             threads_number.TabIndex = 4;
             threads_number.Text = "1";
-           // threads_number.Click += threads_number_Click;
             // 
             // library_groupBox
             // 
@@ -108,7 +107,7 @@
             library_groupBox.TabIndex = 5;
             library_groupBox.TabStop = false;
             library_groupBox.Text = "Choose the library";
-           //library_groupBox.Enter += library_groupBox_Enter;
+           // library_groupBox.Enter += library_groupBox_Enter;
             // 
             // x64_button
             // 
@@ -131,7 +130,7 @@
             asm_button.TabStop = true;
             asm_button.Text = "Asm";
             asm_button.UseVisualStyleBackColor = true;
-            //asm_button.CheckedChanged += radioButton1_CheckedChanged;
+           //asm_button.CheckedChanged += asm_button_CheckedChanged;
             // 
             // title
             // 
@@ -151,7 +150,6 @@
             photo_infos_chooser.Name = "photo_infos_chooser";
             photo_infos_chooser.Size = new Size(157, 23);
             photo_infos_chooser.TabIndex = 7;
-            //photo_infos_chooser.SelectedIndexChanged += photo_infos_chooser_SelectedIndexChanged;
             // 
             // info_chooser_label
             // 
@@ -161,7 +159,6 @@
             info_chooser_label.Size = new Size(153, 30);
             info_chooser_label.TabIndex = 8;
             info_chooser_label.Text = "What do you want to know \nabout this photo?";
-            //info_chooser_label.Click += info_chooser_label_Click;
             // 
             // run_simple
             // 
@@ -171,20 +168,21 @@
             run_simple.TabIndex = 9;
             run_simple.Text = "Run";
             run_simple.UseVisualStyleBackColor = true;
+            run_simple.Click += run_simple_Click;
             // 
             // ms_counter_run_simp
             // 
             ms_counter_run_simp.AutoSize = true;
-            ms_counter_run_simp.Location = new Point(667, 115);
+            ms_counter_run_simp.Location = new Point(588, 130);
             ms_counter_run_simp.Name = "ms_counter_run_simp";
             ms_counter_run_simp.Size = new Size(29, 15);
             ms_counter_run_simp.TabIndex = 10;
             ms_counter_run_simp.Text = "0ms";
-            //ms_counter_run_simp.Click += label2_Click;
+            //ms_counter_run_simp.Click += ms_counter_run_simp_Click_1;
             // 
             // run_with_everything_button
             // 
-            run_with_everything_button.Location = new Point(638, 139);
+            run_with_everything_button.Location = new Point(638, 219);
             run_with_everything_button.Name = "run_with_everything_button";
             run_with_everything_button.Size = new Size(87, 25);
             run_with_everything_button.TabIndex = 11;

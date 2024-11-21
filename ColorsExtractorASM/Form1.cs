@@ -1,100 +1,52 @@
 ﻿using System;
 using System.Drawing;
-using System.Drawing.Imaging;
 using System.Runtime.InteropServices;
-using System.Threading.Tasks;
-using System.Linq;
-using System.Collections.Concurrent;
 using System.Windows.Forms;
 
 namespace ColorsExtractorASM
 {
     public partial class Form1 : Form
     {
+        [DllImport(@"C:\Users\grzyw\source\repos\ColorExtractorASM\x64\Debug\JAAsm.dll")]
+        static extern int MyProc1(int a, int b);
+
         private readonly int[] sliderValues = { 1, 2, 4, 8, 16, 32, 64 };
         private Bitmap selectedImage;
         private ColorAnalyzer colorAnalyzer;
-        private Label resultLabel;
-        private ComboBox colorInfos;
 
         public Form1()
         {
             InitializeComponent();
 
-            // Konfiguracja TrackBar
+            // Configure TrackBar
             trackBar1.Minimum = 0;
             trackBar1.Maximum = sliderValues.Length - 1;
             trackBar1.TickFrequency = 1;
             trackBar1.SmallChange = 1;
             trackBar1.LargeChange = 1;
 
-            // Dodanie ComboBox do wyświetlania informacji o kolorach
-            colorInfos = new ComboBox
-            {
-                Items = { "Dark / Bright", "Warm / Cold", "Red / Green / Blue" },
-                Location = new Point(12, 47),
-                Size = new Size(200, 23)
-            };
-            Controls.Add(colorInfos);
+            // Populate dropdown with analysis options
+            string[] items = { "Dark / Bright", "Warm / Cold", "Red / Green / Blue" };
+            photo_infos_chooser.Items.AddRange(items);
 
-            // Dodanie obsługi zdarzeń
+            // Add event handlers
             trackBar1.Scroll += TrackBar1_Scroll;
             UpdateLabelWithValue();
 
-            // Inicjalizacja ColorAnalyzer
+            // Initialize ColorAnalyzer
             colorAnalyzer = new ColorAnalyzer();
-
-            // Dodaj przycisk do analizy
-            Button btnAnalyze = new Button
-            {
-                Text = "Analyze Colors",
-                Location = new Point(12, 75),
-                Size = new Size(100, 30)
-            };
-            btnAnalyze.Click += BtnAnalyze_Click;
-            Controls.Add(btnAnalyze);
-
-            // Dodaj etykietę do wyświetlania wyniku
-            resultLabel = new Label
-            {
-                Text = "",
-                Location = new Point(12, 110),
-                Size = new Size(400, 23)
-            };
-            Controls.Add(resultLabel);
-        }
-
-        private void BtnAnalyze_Click(object sender, EventArgs e)
-        {
-            if (selectedImage == null)
-            {
-                MessageBox.Show("Proszę najpierw wczytać zdjęcie!");
-                return;
-            }
-
-            // Pobierz aktualną liczbę wątków z TrackBar
-            int threadCount = sliderValues[trackBar1.Value];
-
-            // Przeprowadź analizę kolorów
-            var result = colorAnalyzer.AnalyzeImage(selectedImage, threadCount);
-
-            // Wyświetl wynik
-            resultLabel.Text = $"Color Temperature: {result.Temperature}, " +
-                              $"Processing Time: {result.ProcessingTime.TotalMilliseconds:F2} ms, " +
-                              $"Threads: {threadCount}";
-
-            // Zaktualizuj informacje o zdjęciu
-            colorInfos.SelectedIndex = (int)result.Temperature;
         }
 
         private void button1_Click(object sender, EventArgs e)
         {
-            // Wczytywanie obrazu
-            openFileDialog1.ShowDialog();
-            string filePath = openFileDialog1.FileName;
-            selectedImage = (Bitmap)Image.FromFile(filePath);
-            pictureBox1.Image = selectedImage;
-            pictureBox1.BorderStyle = BorderStyle.None;
+            // Load image
+            if (openFileDialog1.ShowDialog() == DialogResult.OK)
+            {
+                string filePath = openFileDialog1.FileName;
+                selectedImage = (Bitmap)Image.FromFile(filePath);
+                pictureBox1.Image = selectedImage;
+                pictureBox1.BorderStyle = BorderStyle.None;
+            }
         }
 
         private void TrackBar1_Scroll(object sender, EventArgs e)
@@ -106,118 +58,62 @@ namespace ColorsExtractorASM
         {
             int currentValue = sliderValues[trackBar1.Value];
             int x = 5, y = 3;
-            // Wywołanie oryginalnej metody z DLL
+
+            // Call the external ASM method
             int retVal = MyProc1(x, y);
-            threads_number.Text = $"Value: {currentValue}, Value from asm: {retVal}";
+
+            threads_number.Text = $"Threads: {currentValue}, ASM Result: {retVal}";
         }
 
-        [DllImport(@"C:\Users\grzyw\source\repos\ColorsExtractorASM\x64\Debug\JAAsm.dll")]
-        static extern int MyProc1(int a, int b);
-    }
-
-    public class ColorAnalyzer
-    {
-        public enum ColorTemperature
+        private void run_simple_Click(object sender, EventArgs e)
         {
-            Cold,
-            Neutral,
-            Warm
-        }
-
-        public class AnalysisResult
-        {
-            public ColorTemperature Temperature { get; set; }
-            public TimeSpan ProcessingTime { get; set; }
-        }
-
-        public AnalysisResult AnalyzeImage(Bitmap image, int threadCount)
-        {
-            var stopwatch = System.Diagnostics.Stopwatch.StartNew();
-
-            // Konwersja bitmapy do tablicy pikseli
-            BitmapData bmpData = image.LockBits(
-                new Rectangle(0, 0, image.Width, image.Height),
-                ImageLockMode.ReadOnly,
-                PixelFormat.Format32bppArgb
-            );
-
-            byte[] pixelData = new byte[Math.Abs(bmpData.Stride) * image.Height];
-            Marshal.Copy(bmpData.Scan0, pixelData, 0, pixelData.Length);
-            image.UnlockBits(bmpData);
-
-            // Podział obrazu na regiony
-            var regions = SplitImageIntoRegions(pixelData, image.Width, image.Height, threadCount);
-
-            // Analiza temperatury kolorów równolegle
-            var temperatures = new ConcurrentBag<ColorTemperature>();
-            Parallel.ForEach(regions, new ParallelOptions { MaxDegreeOfParallelism = threadCount }, region =>
+            if (selectedImage == null)
             {
-                var regionTemperature = AnalyzeRegionTemperature(region);
-                temperatures.Add(regionTemperature);
-            });
-
-            // Agregacja wyniku
-            var finalTemperature = AggregateSingleColorTemperature(temperatures);
-
-            stopwatch.Stop();
-
-            return new AnalysisResult
-            {
-                Temperature = finalTemperature,
-                ProcessingTime = stopwatch.Elapsed
-            };
-        }
-
-        private byte[][] SplitImageIntoRegions(byte[] pixelData, int width, int height, int threadCount)
-        {
-            var regions = new byte[threadCount][];
-            int regionSize = pixelData.Length / threadCount;
-
-            for (int i = 0; i < threadCount; i++)
-            {
-                int start = i * regionSize;
-                int length = (i == threadCount - 1) ?
-                    (pixelData.Length - start) :
-                    regionSize;
-
-                regions[i] = new byte[length];
-                Array.Copy(pixelData, start, regions[i], 0, length);
+                MessageBox.Show("Please select an image!");
+                return;
             }
 
-            return regions;
-        }
+            // Get thread count
+            int threadCount = sliderValues[trackBar1.Value];
 
-        private ColorTemperature AnalyzeRegionTemperature(byte[] regionPixels)
-        {
-            int totalR = 0, totalG = 0, totalB = 0;
-            for (int i = 0; i < regionPixels.Length; i += 4)
+            if (!asm_button.Checked && !x64_button.Checked)
             {
-                totalB += regionPixels[i];     // Blue
-                totalG += regionPixels[i + 1]; // Green
-                totalR += regionPixels[i + 2]; // Red
+                MessageBox.Show("Please select a library!");
+                return;
             }
 
-            int pixelCount = regionPixels.Length / 4;
-            double avgR = totalR / (double)pixelCount;
-            double avgG = totalG / (double)pixelCount;
-            double avgB = totalB / (double)pixelCount;
+            int action = photo_infos_chooser.SelectedIndex;
+            if (action == -1)
+            {
+                MessageBox.Show("Please select an action!");
+                return;
+            }
 
-            // Prosta heurystyka temperatury kolorów
-            double warmthScore = (avgR + avgG) / 2 - avgB;
+            ColorAnalyzer.AnalysisResult result = null;
 
-            if (warmthScore > 50) return ColorTemperature.Warm;
-            if (warmthScore < -50) return ColorTemperature.Cold;
-            return ColorTemperature.Neutral;
-        }
+            if (x64_button.Checked)
+            {
+                try
+                {
+                    result = colorAnalyzer.AnalyzeImage(selectedImage, threadCount,
+                        (ColorAnalyzer.AnalysisType)action);
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show($"Error during analysis: {ex.Message}");
+                    return;
+                }
+            }
+            else if (asm_button.Checked)
+            {
+                MessageBox.Show("ASM analysis selected. Implement this functionality.");
+                return;
+            }
 
-        private ColorTemperature AggregateSingleColorTemperature(ConcurrentBag<ColorTemperature> temperatures)
-        {
-            var temperatureGroups = temperatures
-                .GroupBy(t => t)
-                .OrderByDescending(g => g.Count())
-                .ToList();
-
-            return temperatureGroups.First().Key;
+            // Display the result
+            ms_counter_run_simp.Text = $"Result: {result.Result}\n" +
+                                       $"Processing Time: {result.ProcessingTime.TotalMilliseconds:F2} ms\n" +
+                                       $"Threads: {threadCount}";
         }
     }
 }
