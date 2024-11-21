@@ -7,8 +7,6 @@ namespace ColorsExtractorASM
 {
     public partial class Form1 : Form
     {
-        [DllImport(@"C:\Users\grzyw\source\repos\ColorExtractorASM\x64\Debug\JAAsm.dll")]
-        static extern int MyProc1(int a, int b);
 
         private readonly int[] sliderValues = { 1, 2, 4, 8, 16, 32, 64 };
         private Bitmap selectedImage;
@@ -26,7 +24,7 @@ namespace ColorsExtractorASM
             trackBar1.LargeChange = 1;
 
             // Populate dropdown with analysis options
-            string[] items = { "Dark / Bright", "Warm / Cold", "Red / Green / Blue" };
+            string[] items = { "Warm / Cold", "Dark / Bright", "Red / Green / Blue" };
             photo_infos_chooser.Items.AddRange(items);
 
             // Add event handlers
@@ -60,9 +58,9 @@ namespace ColorsExtractorASM
             int x = 5, y = 3;
 
             // Call the external ASM method
-            int retVal = MyProc1(x, y);
+            // int retVal = MyProc1(x, y);
 
-            threads_number.Text = $"Threads: {currentValue}, ASM Result: {retVal}";
+            threads_number.Text = $"Threads: {currentValue}";
         }
 
         private void run_simple_Click(object sender, EventArgs e)
@@ -89,7 +87,7 @@ namespace ColorsExtractorASM
                 return;
             }
 
-            ColorAnalyzer.AnalysisResult result = null;
+            ColorAnalyzer.AnalysisResult? result = null;
 
             if (x64_button.Checked)
             {
@@ -106,14 +104,23 @@ namespace ColorsExtractorASM
             }
             else if (asm_button.Checked)
             {
-                MessageBox.Show("ASM analysis selected. Implement this functionality.");
-                return;
-            }
+                try
+                {
+                    colorAnalyzer.setUseASM();
+                    result = colorAnalyzer.AnalyzeImage(selectedImage, threadCount,
+                        (ColorAnalyzer.AnalysisType)action);
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show($"Error during analysis: {ex.Message}");
+                    return;
+                }
 
-            // Display the result
-            ms_counter_run_simp.Text = $"Result: {result.Result}\n" +
-                                       $"Processing Time: {result.ProcessingTime.TotalMilliseconds:F2} ms\n" +
-                                       $"Threads: {threadCount}";
+                // Display the result
+                ms_counter_run_simp.Text = $"Result: {result.Result}\n" +
+                                           $"Processing Time: {result.ProcessingTime.TotalMilliseconds:F2} ms\n" +
+                                           $"Threads: {threadCount}";
+            }
         }
     }
 }
