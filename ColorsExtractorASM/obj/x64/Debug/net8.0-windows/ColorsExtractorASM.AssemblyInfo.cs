@@ -14,7 +14,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("ColorsExtractorASM")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+8e4ddbddd081f119bbd2b6c1ce2a74ed0913d6b9")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+bd1a9f2bd8285c52d500d05356e04e52754f46b6")]
 [assembly: System.Reflection.AssemblyProductAttribute("ColorsExtractorASM")]
 [assembly: System.Reflection.AssemblyTitleAttribute("ColorsExtractorASM")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

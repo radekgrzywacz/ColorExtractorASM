@@ -1,50 +1,74 @@
-.code
+section .text
+global ProcessPixelsASM
 
-; Define the procedure to process pixel data (simplified for demonstration)
-ProcessPixelsASM proc
-    ; RCX: pointer to the pixel array
-    ; RDX: length of the pixel array
-    ; Results (e.g., aggregate color sum) will be stored in the result array
-    
-    ; Initialize local variables for RGB sums
-    xor r8, r8        ; R8 will store Red sum
-    xor r9, r9        ; R9 will store Green sum
-    xor r10, r10      ; R10 will store Blue sum
-    
-    ; Loop through the pixel array
-    ; Loop counter: RDX contains length of array
-ProcessLoop:
-    ; Check if we have reached the end of the array
-    cmp rdx, 0
-    jz ProcessEnd
+; Procedure prototype:
+; Input:
+;   ESI -> pointer to region array
+;   EDI -> pointer to pixelProcessor procedure
+;   EDX -> pointer to resultAggregator procedure
+;   EAX -> initialValue
+; Output:
+;   EAX -> final result
+; Preserves all registers except EAX
 
-    ; Load pixel data (4 bytes per pixel: BGR format)
-    ; RCX points to the current pixel data (starting address)
-    movzx r11, byte ptr [rcx]      ; Load Blue (byte at RCX)
-    movzx r12, byte ptr [rcx+1]    ; Load Green (byte at RCX+1)
-    movzx r13, byte ptr [rcx+2]    ; Load Red (byte at RCX+2)
-    
-    ; Accumulate color sums
-    add r8, r13      ; Add Red to sum
-    add r9, r12      ; Add Green to sum
-    add r10, r11     ; Add Blue to sum
+ProcessPixelsASM:
+    push    ebp
+    mov     ebp, esp
+    push    ebx
+    push    ecx
+    push    edx
+    push    esi
+    push    edi
 
-    ; Move to the next pixel (advance by 4 bytes)
-    add rcx, 4
-    
-    ; Decrement the counter (RDX) and loop
-    dec rdx
-    jmp ProcessLoop
+    ; Save initial value
+    push    eax         ; Save on stack as working value
 
-ProcessEnd:
-    ; Store results in memory (for example, at address in RCX)
-    ; Store Red sum in results[0], Green sum in results[1], Blue sum in results[2]
-    mov [rcx], r8
-    mov [rcx+8], r9
-    mov [rcx+16], r10
+process_loop:
+    ; Check if we have at least 4 more bytes
+    mov     ebx, [esi+3]    ; Try to read 4th byte ahead
+    jz      done            ; If we can't, we're done
 
-    ; Return from the procedure
+    ; Get RGB values
+    xor     ebx, ebx        ; Clear ebx for byte loads
+    mov     bl, [esi]       ; Blue
+    push    ebx
+    mov     bl, [esi+1]     ; Green
+    push    ebx
+    mov     bl, [esi+2]     ; Red
+    push    ebx
+
+    ; Call pixelProcessor
+    call    edi             ; pixelProcessor(r, g, b)
+    add     esp, 12         ; Clean up parameters
+
+    ; Save pixelResult
+    push    eax
+
+    ; Get current aggregatedResult
+    mov     ebx, [ebp-4]    ; Load current aggregated result
+
+    ; Call resultAggregator
+    push    eax             ; pixelResult
+    push    ebx             ; aggregatedResult
+    call    edx             ; resultAggregator(aggregatedResult, pixelResult)
+    add     esp, 8          ; Clean up parameters
+
+    ; Store new aggregated result
+    mov     [ebp-4], eax
+
+    ; Move to next pixel
+    add     esi, 4
+    jmp     process_loop
+
+done:
+    ; Get final result into eax
+    mov     eax, [ebp-4]
+
+    ; Restore registers
+    pop     edi
+    pop     esi
+    pop     edx
+    pop     ecx
+    pop     ebx
+    pop     ebp
     ret
-ProcessPixelsASM endp
-
-end

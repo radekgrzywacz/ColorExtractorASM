@@ -93,8 +93,9 @@ namespace ColorsExtractorASM
             {
                 try
                 {
-                    result = colorAnalyzer.AnalyzeImage(selectedImage, threadCount,
-                        (ColorAnalyzer.AnalysisType)action);
+                    //result = colorAnalyzer.AnalyzeImage(selectedImage, threadCount,
+                    //    (ColorAnalyzer.AnalysisType)action);
+                    MessageBox.Show($"Analyzing in x64");
                 }
                 catch (Exception ex)
                 {
@@ -107,8 +108,8 @@ namespace ColorsExtractorASM
                 try
                 {
                     colorAnalyzer.setUseASM();
-                    result = colorAnalyzer.AnalyzeImage(selectedImage, threadCount,
-                        (ColorAnalyzer.AnalysisType)action);
+                    //result = colorAnalyzer.AnalyzeImage(selectedImage, threadCount,
+                    //    (ColorAnalyzer.AnalysisType)action);
                 }
                 catch (Exception ex)
                 {
