@@ -10,7 +10,7 @@ namespace ColorsExtractorASM
 
         private readonly int[] sliderValues = { 1, 2, 4, 8, 16, 32, 64 };
         private Bitmap selectedImage;
-        private ColorAnalyzer colorAnalyzer;
+        private Analyzer analyzer;
 
         public Form1()
         {
@@ -32,7 +32,7 @@ namespace ColorsExtractorASM
             UpdateLabelWithValue();
 
             // Initialize ColorAnalyzer
-            colorAnalyzer = new ColorAnalyzer();
+            analyzer = new Analyzer();
         }
 
         private void button1_Click(object sender, EventArgs e)
@@ -80,14 +80,14 @@ namespace ColorsExtractorASM
                 return;
             }
 
-            int action = photo_infos_chooser.SelectedIndex;
-            if (action == -1)
+            string action = photo_infos_chooser.Text;
+            if (action.Equals("") || action == null)
             {
                 MessageBox.Show("Please select an action!");
                 return;
             }
 
-            ColorAnalyzer.AnalysisResult? result = null;
+            AnalysisResult? result = null;
 
             if (x64_button.Checked)
             {
@@ -95,7 +95,8 @@ namespace ColorsExtractorASM
                 {
                     //result = colorAnalyzer.AnalyzeImage(selectedImage, threadCount,
                     //    (ColorAnalyzer.AnalysisType)action);
-                    MessageBox.Show($"Analyzing in x64");
+                    result = analyzer.AnalyzeImage(selectedImage, threadCount, action);
+                    // MessageBox.Show($"Analyzing in x64");
                 }
                 catch (Exception ex)
                 {
@@ -107,7 +108,7 @@ namespace ColorsExtractorASM
             {
                 try
                 {
-                    colorAnalyzer.setUseASM();
+                    // colorAnalyzer.setUseASM();
                     //result = colorAnalyzer.AnalyzeImage(selectedImage, threadCount,
                     //    (ColorAnalyzer.AnalysisType)action);
                 }
@@ -116,12 +117,17 @@ namespace ColorsExtractorASM
                     MessageBox.Show($"Error during analysis: {ex.Message}");
                     return;
                 }
-
-                // Display the result
-                ms_counter_run_simp.Text = $"Result: {result.Result}\n" +
-                                           $"Processing Time: {result.ProcessingTime.TotalMilliseconds:F2} ms\n" +
-                                           $"Threads: {threadCount}";
             }
+            // Display the result
+            ms_counter_run_simp.Text = $"Result: {result.Result}\n" +
+                                          $"Processing Time: {result.ProcessingTime.TotalMilliseconds:F2} ms\n" +
+                                          $"Threads: {threadCount}";
+
+        }
+
+        private void photo_infos_chooser_SelectedIndexChanged(object sender, EventArgs e)
+        {
+
         }
     }
 }

@@ -107,7 +107,6 @@
             library_groupBox.TabIndex = 5;
             library_groupBox.TabStop = false;
             library_groupBox.Text = "Choose the library";
-           // library_groupBox.Enter += library_groupBox_Enter;
             // 
             // x64_button
             // 
@@ -130,7 +129,6 @@
             asm_button.TabStop = true;
             asm_button.Text = "Asm";
             asm_button.UseVisualStyleBackColor = true;
-           //asm_button.CheckedChanged += asm_button_CheckedChanged;
             // 
             // title
             // 
@@ -150,6 +148,7 @@
             photo_infos_chooser.Name = "photo_infos_chooser";
             photo_infos_chooser.Size = new Size(157, 23);
             photo_infos_chooser.TabIndex = 7;
+            photo_infos_chooser.SelectedIndexChanged += photo_infos_chooser_SelectedIndexChanged;
             // 
             // info_chooser_label
             // 
@@ -178,7 +177,6 @@
             ms_counter_run_simp.Size = new Size(29, 15);
             ms_counter_run_simp.TabIndex = 10;
             ms_counter_run_simp.Text = "0ms";
-            //ms_counter_run_simp.Click += ms_counter_run_simp_Click_1;
             // 
             // run_with_everything_button
             // 
