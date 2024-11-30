@@ -4,6 +4,7 @@ using System.Diagnostics;
 using System.Drawing;
 using System.Drawing.Imaging;
 using System.Linq;
+using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -11,11 +12,14 @@ namespace ColorsExtractorASM
 {
     public class Analyzer
     {
+        [DllImport("BitmapConverter.dll", CallingConvention = CallingConvention.StdCall)]
+        public static extern void ImageToBitArrayASM(IntPtr bitmapData, [Out] byte[] bits, int width, int height);
 
-        public AnalysisResult AnalyzeImage(Bitmap bitmap, int threadCount, string analysisType)
+        
+        public AnalysisResult AnalyzeImage(Bitmap bitmap, int threadCount, string analysisType, bool asmChecked)
         {
             // Otwórz obraz
-            byte[] imageBits = ImageToBitArray(bitmap);
+            byte[] imageBits = asmChecked ? ImageToBitArray(bitmap) : UseASMLibrary(bitmap);
 
             // Wielowątkowość i analiza
             Stopwatch stopwatch = new Stopwatch();
@@ -34,9 +38,30 @@ namespace ColorsExtractorASM
             analysisResult.Result = result;
             analysisResult.ProcessingTime = stopwatch.Elapsed;
             return analysisResult;
-            // MessageBox.Show($"Result: {result}\nTime: {stopwatch.ElapsedMilliseconds} ms");
         }
 
+        public byte[] UseASMLibrary(Bitmap bitmap)
+        {
+            int width = bitmap.Width;
+            int height = bitmap.Height;
+            byte[] bits = new byte[width * height * 3];
+
+            BitmapData bmpData = bitmap.LockBits(
+                new Rectangle(0, 0, width, height),
+                ImageLockMode.ReadOnly,
+                PixelFormat.Format24bppRgb);
+
+            try
+            {
+                ImageToBitArrayASM(bmpData.Scan0, bits, width, height);
+            }
+            finally
+            {
+                bitmap.UnlockBits(bmpData);
+            }
+
+            return bits;
+        }
 
         // Funkcja konwertująca obraz do tablicy bitów RGB
         private byte[] ImageToBitArray(Bitmap bitmap)
