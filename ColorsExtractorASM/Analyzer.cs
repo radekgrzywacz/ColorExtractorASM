@@ -12,14 +12,14 @@ namespace ColorsExtractorASM
 {
     public class Analyzer
     {
-        [DllImport("BitmapConverter.dll", CallingConvention = CallingConvention.StdCall)]
-        public static extern void ImageToBitArrayASM(IntPtr bitmapData, [Out] byte[] bits, int width, int height);
+        //[DllImport("BitmapConverter.dll", CallingConvention = CallingConvention.StdCall)]
+        //public static extern void ImageToBitArrayASM(IntPtr bitmapData, [Out] byte[] bits, int width, int height);
 
         
         public AnalysisResult AnalyzeImage(Bitmap bitmap, int threadCount, string analysisType, bool asmChecked)
         {
             // Otwórz obraz
-            byte[] imageBits = asmChecked ? ImageToBitArray(bitmap) : UseASMLibrary(bitmap);
+            byte[] imageBits = ImageToBitArray(bitmap);
 
             // Wielowątkowość i analiza
             Stopwatch stopwatch = new Stopwatch();
@@ -38,29 +38,6 @@ namespace ColorsExtractorASM
             analysisResult.Result = result;
             analysisResult.ProcessingTime = stopwatch.Elapsed;
             return analysisResult;
-        }
-
-        public byte[] UseASMLibrary(Bitmap bitmap)
-        {
-            int width = bitmap.Width;
-            int height = bitmap.Height;
-            byte[] bits = new byte[width * height * 3];
-
-            BitmapData bmpData = bitmap.LockBits(
-                new Rectangle(0, 0, width, height),
-                ImageLockMode.ReadOnly,
-                PixelFormat.Format24bppRgb);
-
-            try
-            {
-                ImageToBitArrayASM(bmpData.Scan0, bits, width, height);
-            }
-            finally
-            {
-                bitmap.UnlockBits(bmpData);
-            }
-
-            return bits;
         }
 
         // Funkcja konwertująca obraz do tablicy bitów RGB

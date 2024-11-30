@@ -1,2 +1,2 @@
 LIBRARY JAAsm
-EXPORTS ImageToBitArrayASM
+EXPORTS MyProc1

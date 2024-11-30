@@ -1,16 +1,1 @@
-﻿  Assembling JAAsm.asm...
-JAAsm.asm(1): error A2044: invalid character in file
-JAAsm.asm(2): error A2008: syntax error : .
-JAAsm.asm(7): error A2008: syntax error : width
-JAAsm.asm(8): error A2070: invalid instruction operands
-JAAsm.asm(10): error A2070: invalid instruction operands
-JAAsm.asm(11): error A2070: invalid instruction operands
-JAAsm.asm(12): error A2070: invalid instruction operands
-JAAsm.asm(32): error A2070: invalid instruction operands
-JAAsm.asm(53): error A2070: invalid instruction operands
-JAAsm.asm(59): error A2070: invalid instruction operands
-JAAsm.asm(60): error A2070: invalid instruction operands
-JAAsm.asm(61): error A2070: invalid instruction operands
-JAAsm.asm(63): error A2070: invalid instruction operands
-JAAsm.asm(65): fatal error A1010: unmatched block nesting : ImageToBitArray
-C:\Program Files\Microsoft Visual Studio\2022\Community\MSBuild\Microsoft\VC\v170\BuildCustomizations\masm.targets(70,5): error MSB3721: The command "ml64.exe /c /nologo /Zi /Fo"x64\Debug\JAAsm.obj" /W3 /errorReport:prompt  /TaJAAsm.asm" exited with code 1.
+﻿
