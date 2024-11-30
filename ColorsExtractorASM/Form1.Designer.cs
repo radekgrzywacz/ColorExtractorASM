@@ -113,7 +113,7 @@
             x64_button.AutoSize = true;
             x64_button.Location = new Point(6, 47);
             x64_button.Name = "x64_button";
-            x64_button.Size = new Size(42, 19);
+            x64_button.Size = new Size(43, 19);
             x64_button.TabIndex = 1;
             x64_button.TabStop = true;
             x64_button.Text = "x64";
@@ -133,11 +133,11 @@
             // title
             // 
             title.AutoSize = true;
-            title.Font = new Font("Stencil", 30F, FontStyle.Italic, GraphicsUnit.Point, 0);
+            title.Font = new Font("Microsoft Sans Serif", 30F, FontStyle.Italic, GraphicsUnit.Point, 0);
             title.ForeColor = Color.Purple;
             title.Location = new Point(202, 9);
             title.Name = "title";
-            title.Size = new Size(398, 47);
+            title.Size = new Size(310, 46);
             title.TabIndex = 6;
             title.Text = "Colors Extractor";
             // 
@@ -186,6 +186,7 @@
             run_with_everything_button.TabIndex = 11;
             run_with_everything_button.Text = "Test";
             run_with_everything_button.UseVisualStyleBackColor = true;
+            run_with_everything_button.Click += run_with_everything_button_Click;
             // 
             // Form1
             // 

@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Drawing;
+using System.IO;
 using System.Runtime.InteropServices;
+using System.Text;
 using System.Windows.Forms;
 
 namespace ColorsExtractorASM
@@ -8,7 +10,7 @@ namespace ColorsExtractorASM
     public partial class Form1 : Form
     {
 
-        private readonly int[] sliderValues = { 1, 2, 4, 8, 16, 32, 64 };
+        private readonly int[] threadNumbers = { 1, 2, 4, 8, 16, 32, 64 };
         private Bitmap selectedImage;
         private Analyzer analyzer;
 
@@ -18,7 +20,7 @@ namespace ColorsExtractorASM
 
             // Configure TrackBar
             trackBar1.Minimum = 0;
-            trackBar1.Maximum = sliderValues.Length - 1;
+            trackBar1.Maximum = threadNumbers.Length - 1;
             trackBar1.TickFrequency = 1;
             trackBar1.SmallChange = 1;
             trackBar1.LargeChange = 1;
@@ -54,7 +56,7 @@ namespace ColorsExtractorASM
 
         private void UpdateLabelWithValue()
         {
-            int currentValue = sliderValues[trackBar1.Value];
+            int currentValue = threadNumbers[trackBar1.Value];
             int x = 5, y = 3;
 
             // Call the external ASM method
@@ -72,7 +74,7 @@ namespace ColorsExtractorASM
             }
 
             // Get thread count
-            int threadCount = sliderValues[trackBar1.Value];
+            int threadCount = threadNumbers[trackBar1.Value];
 
             if (!asm_button.Checked && !x64_button.Checked)
             {
@@ -95,7 +97,7 @@ namespace ColorsExtractorASM
                 {
                     //result = colorAnalyzer.AnalyzeImage(selectedImage, threadCount,
                     //    (ColorAnalyzer.AnalysisType)action);
-                    result = analyzer.AnalyzeImage(selectedImage, threadCount, action, false);
+                    result = analyzer.AnalyzeImageSimple(selectedImage, threadCount, action, false);
                     // MessageBox.Show($"Analyzing in x64");
                 }
                 catch (Exception ex)
@@ -108,7 +110,7 @@ namespace ColorsExtractorASM
             {
                 try
                 {
-                    result = analyzer.AnalyzeImage(selectedImage, threadCount, action, true);
+                    result = analyzer.AnalyzeImageSimple(selectedImage, threadCount, action, true);
                     //result = colorAnalyzer.AnalyzeImage(selectedImage, threadCount,
                     //    (ColorAnalyzer.AnalysisType)action);
                 }
@@ -129,5 +131,100 @@ namespace ColorsExtractorASM
         {
 
         }
+
+        private void run_with_everything_button_Click(object sender, EventArgs e)
+        {
+            if (photo_infos_chooser.SelectedItem == null)
+            {
+                MessageBox.Show("Please select an analysis type!");
+                return;
+            }
+
+            string analysisType = photo_infos_chooser.SelectedItem.ToString();
+            int[] threadCounts = threadNumbers;
+
+            // Paths for the three photos
+            string projectDirectory = Path.GetFullPath(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, @"..\..\..\..\"));
+
+            // Paths for the three photos (relative to the project directory)
+            string[] photoPaths = {
+                Path.Combine(projectDirectory, @"zdjecie_slaba_jakosc.jpg"),
+                Path.Combine(projectDirectory, @"zdjecie_medium_jakosc.jpg"),
+                Path.Combine(projectDirectory, @"zdjecie_top_jakosc.jpg")
+            };
+
+            // List to hold the results
+            List<(string PhotoName, AnalysisResult x64Result, AnalysisResult asmResult)> consolidatedResults = new();
+
+            foreach (string path in photoPaths)
+            {
+                if (!File.Exists(path))
+                {
+                    MessageBox.Show($"Photo at {path} not found!");
+                    continue;
+                }
+
+                Bitmap photo = new Bitmap(path);
+
+                // Perform analyses
+                AnalysisResult x64Result = analyzer.AnalyzeImageWithTests(photo, threadCounts, analysisType, false);
+                AnalysisResult asmResult = analyzer.AnalyzeImageWithTests(photo, threadCounts, analysisType, true);
+
+                // Add to the consolidated results
+                consolidatedResults.Add((Path.GetFileName(path), x64Result, asmResult));
+            }
+
+            // Display the consolidated results in one window
+            CreateResultWindow("Consolidated Analysis Results", consolidatedResults);
+        }
+
+
+        private void CreateResultWindow(string title, List<(string PhotoName, AnalysisResult x64Result, AnalysisResult asmResult)> results)
+        {
+            // Create a new form to display the results
+            Form resultWindow = new Form
+            {
+                Text = title,
+                Size = new Size(800, 600)
+            };
+
+            // Add a RichTextBox for displaying the results
+            RichTextBox rtb = new RichTextBox
+            {
+                Dock = DockStyle.Fill,
+                ReadOnly = true
+            };
+
+            // Build the text content for the result window
+            StringBuilder resultText = new StringBuilder();
+
+            resultText.AppendLine("Consolidated Analysis Results");
+            resultText.AppendLine(new string('-', 50));
+
+            foreach (var resultEntry in results)
+            {
+                resultText.AppendLine($"Photo: {resultEntry.PhotoName}");
+                resultText.AppendLine("x64 Analysis Results:");
+                resultText.AppendLine(resultEntry.x64Result.Result);
+                //resultText.AppendLine($"Total Processing Time: {resultEntry.x64Result.ProcessingTime.TotalMilliseconds} ms");
+                resultText.AppendLine();
+
+                resultText.AppendLine("ASM Analysis Results:");
+                resultText.AppendLine(resultEntry.asmResult.Result);
+               // resultText.AppendLine($"Total Processing Time: {resultEntry.asmResult.ProcessingTime.TotalMilliseconds} ms");
+                resultText.AppendLine(new string('-', 50));
+            }
+
+            // Set the content of the RichTextBox
+            rtb.Text = resultText.ToString();
+
+            // Add the RichTextBox to the form
+            resultWindow.Controls.Add(rtb);
+
+            // Show the result window
+            resultWindow.Show();
+        }
+
+
     }
 }

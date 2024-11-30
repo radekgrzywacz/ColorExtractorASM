@@ -16,7 +16,7 @@ namespace ColorsExtractorASM
         //public static extern void ImageToBitArrayASM(IntPtr bitmapData, [Out] byte[] bits, int width, int height);
 
         
-        public AnalysisResult AnalyzeImage(Bitmap bitmap, int threadCount, string analysisType, bool asmChecked)
+        public AnalysisResult AnalyzeImageSimple(Bitmap bitmap, int threadCount, string analysisType, bool asmChecked)
         {
             // Otwórz obraz
             byte[] imageBits = ImageToBitArray(bitmap);
@@ -39,6 +39,56 @@ namespace ColorsExtractorASM
             analysisResult.ProcessingTime = stopwatch.Elapsed;
             return analysisResult;
         }
+
+        public AnalysisResult AnalyzeImageWithTests(Bitmap bitmap, int[] threadCountArray, string analysisType, bool asmChecked)
+        {
+            string libName = asmChecked ? "Asm" : "x64";
+            StringBuilder results = new StringBuilder();
+            TimeSpan totalProcessingTime = TimeSpan.Zero;
+
+            foreach (int threadCount in threadCountArray)
+            {
+                double totalTime = 0; // Accumulates time for 5 runs
+                string result = null;
+
+                for (int i = 0; i < 5; i++) // Run the analysis 5 times
+                {
+                    Stopwatch stopwatch = new Stopwatch();
+                    stopwatch.Start();
+
+                    if (!asmChecked)
+                    {
+                        result = analysisType switch
+                        {
+                            "Dark / Bright" => AnalyzeBrightness(ImageToBitArray(bitmap), bitmap.Width, bitmap.Height, threadCount),
+                            "Warm / Cold" => AnalyzeTemperature(ImageToBitArray(bitmap), bitmap.Width, bitmap.Height, threadCount),
+                            "Red / Green / Blue" => AnalyzeDominantChannel(ImageToBitArray(bitmap), bitmap.Width, bitmap.Height, threadCount),
+                            _ => throw new InvalidOperationException("Invalid analysis type")
+                        };
+                    }
+                    else
+                    {
+                        result = "Not implemented";
+                    }
+
+                    stopwatch.Stop();
+                    totalTime += stopwatch.ElapsedMilliseconds;
+                }
+
+                double averageTime = totalTime / 5; // Calculate average time over 5 runs
+                totalProcessingTime += TimeSpan.FromMilliseconds(averageTime);
+
+                results.AppendLine($"Threads: {threadCount}, Result: {result}, Average Time: {averageTime} ms");
+            }
+
+            return new AnalysisResult
+            {
+                Result = results.ToString(),
+                ProcessingTime = totalProcessingTime
+            };
+        }
+
+
 
         // Funkcja konwertująca obraz do tablicy bitów RGB
         private byte[] ImageToBitArray(Bitmap bitmap)
