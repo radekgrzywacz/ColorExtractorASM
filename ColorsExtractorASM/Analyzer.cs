@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Drawing;
@@ -7,75 +8,167 @@ using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading.Tasks;
+using RegularLib;
+using static System.Net.Mime.MediaTypeNames;
 
 namespace ColorsExtractorASM
 {
-    public class Analyzer
+    public unsafe partial class Analyzer
     {
-        //[DllImport("BitmapConverter.dll", CallingConvention = CallingConvention.StdCall)]
-        //public static extern void ImageToBitArrayASM(IntPtr bitmapData, [Out] byte[] bits, int width, int height);
+        private const int SEGMENT_HEIGHT = 8;
+        private readonly object lockObject = new object();
+        private AnalyzerRegular analyzerRegular = new AnalyzerRegular();
 
-        
-        public AnalysisResult AnalyzeImageSimple(Bitmap bitmap, int threadCount, string analysisType, bool asmChecked)
+        private delegate void AsmProcessDelegate(byte* pixels, int pixelCount, int* sum);
+
+        [DllImport(@"C:\Users\SQ299\Source\Repos\ColorExtractorASM\x64\Debug\JAAsm.dll")]
+        private static extern void CalculateAverageBrightness(byte* pixels, int pixelCount, int* sum);
+
+        [DllImport(@"C:\Users\SQ299\Source\Repos\ColorExtractorASM\x64\Debug\JAAsm.dll")]
+        private static extern int CalculateTemperature(byte* data, int length);
+
+        [DllImport(@"C:\Users\SQ299\Source\Repos\ColorExtractorASM\x64\Debug\JAAsm.dll")]
+        private static extern int CalculateDominantChannel(byte* data, int length);
+
+        public bool asmChecked { get; set; } = false;
+
+        private unsafe string AnalyzeBrightness(Bitmap bitmap, int threadCount)
         {
-            // Otwórz obraz
-            byte[] imageBits = ImageToBitArray(bitmap);
+            double totalBrightness = 0.0;
+            if (!asmChecked)
+            {
+                totalBrightness = ProcessImageSegments(bitmap, threadCount, analyzerRegular.AnalyzeBrightnessRegular);
+            }
 
-            // Wielowątkowość i analiza
+            totalBrightness = ProcessImageSegments(bitmap, threadCount, CalculateAverageBrightness);
+            //double averageBrightness = totalBrightness / (double)(bitmap.Width * bitmap.Height * 3);
+
+            return totalBrightness < 128 ? $"Dark {totalBrightness:F2}" : $"Bright {totalBrightness:F2}";
+        }
+
+        //private unsafe string AnalyzeTemperature(Bitmap bitmap, int threadCount)
+        //{
+        //    if (!asmChecked)
+        //    {
+        //        return analyzerRegular.AnalyzeTemperatureRegular(bitmap, threadCount);
+        //    }
+
+        //    int temperatureSum = ProcessImageSegments(bitmap, threadCount, CalculateTemperature);
+
+        //    return temperatureSum > 0 ? $"Warm {temperatureSum}" : $"Cold {temperatureSum}";
+        //}
+
+        private unsafe double ProcessImageSegments(Bitmap image, int threadCount, AsmProcessDelegate processFunction)
+        {
+            // Validate and adjust thread count
+            if (threadCount <= 0)
+                threadCount = Environment.ProcessorCount;
+            else
+                threadCount = Math.Min(threadCount, Environment.ProcessorCount);
+
+            int imageWidth = image.Width;
+            int imageHeight = image.Height;
+
+            BitmapData bitmapData = image.LockBits(
+                new Rectangle(0, 0, imageWidth, imageHeight),
+                ImageLockMode.ReadOnly,
+                PixelFormat.Format32bppArgb);
+
+            try
+            {
+                int totalPixels = imageWidth * imageHeight;
+                int* sum = stackalloc int[threadCount]; // Separate accumulator for each thread
+
+                // Split the image into chunks for parallel processing
+                int chunkSize = (imageHeight + threadCount - 1) / threadCount; // Ceiling division
+                Parallel.For(0, threadCount, i =>
+                {
+                    int startY = i * chunkSize;
+                    int endY = Math.Min((i + 1) * chunkSize, imageHeight);
+                    int pixelsInChunk = (endY - startY) * imageWidth;
+
+                    if (pixelsInChunk > 0) // Only process if there are pixels in this chunk
+                    {
+                        byte* startPtr = (byte*)bitmapData.Scan0 + (startY * bitmapData.Stride);
+                        processFunction(startPtr, pixelsInChunk, &sum[i]);
+                    }
+                });
+
+                // Sum up results from all threads
+                int totalSum = 0;
+                for (int i = 0; i < threadCount; i++)
+                {
+                    totalSum += sum[i];
+                }
+
+                // Calculate final average
+                return totalSum / (double)(totalPixels * 3);
+            }
+            finally
+            {
+                image.UnlockBits(bitmapData);
+            }
+        }
+
+
+        private class ImageSegment
+        {
+            public int StartY { get; set; }
+            public int Height { get; set; }
+            public int Width { get; set; }
+        }
+
+        public AnalysisResult AnalyzeImageSimple(Bitmap bitmap, int threadCount, string analysisType)
+        {
             Stopwatch stopwatch = new Stopwatch();
             stopwatch.Start();
 
             string result = analysisType switch
             {
-                "Dark / Bright" => AnalyzeBrightness(imageBits, bitmap.Width, bitmap.Height, threadCount),
-                "Warm / Cold" => AnalyzeTemperature(imageBits, bitmap.Width, bitmap.Height, threadCount),
-                "Red / Green / Blue" => AnalyzeDominantChannel(imageBits, bitmap.Width, bitmap.Height, threadCount),
+                "Dark / Bright" => AnalyzeBrightness(bitmap, threadCount),
+                //"Warm / Cold" => AnalyzeTemperature(bitmap, threadCount),
+                // "Red / Green / Blue" => AnalyzeDominantChannel(bitmap, threadCount),
                 _ => throw new InvalidOperationException("Invalid analysis type")
             };
 
             stopwatch.Stop();
-            AnalysisResult analysisResult = new AnalysisResult();
-            analysisResult.Result = result;
-            analysisResult.ProcessingTime = stopwatch.Elapsed;
-            return analysisResult;
+            return new AnalysisResult
+            {
+                Result = result,
+                ProcessingTime = stopwatch.Elapsed
+            };
         }
 
-        public AnalysisResult AnalyzeImageWithTests(Bitmap bitmap, int[] threadCountArray, string analysisType, bool asmChecked)
+        public AnalysisResult AnalyzeImageWithTests(Bitmap bitmap, int[] threadCountArray, string analysisType, bool asmCheckedBox)
         {
             string libName = asmChecked ? "Asm" : "x64";
             StringBuilder results = new StringBuilder();
             TimeSpan totalProcessingTime = TimeSpan.Zero;
+            asmChecked = asmCheckedBox;
 
             foreach (int threadCount in threadCountArray)
             {
-                double totalTime = 0; // Accumulates time for 5 runs
+                double totalTime = 0;
                 string result = null;
 
-                for (int i = 0; i < 5; i++) // Run the analysis 5 times
+                for (int i = 0; i < 5; i++)
                 {
                     Stopwatch stopwatch = new Stopwatch();
                     stopwatch.Start();
 
-                    if (!asmChecked)
+                    result = analysisType switch
                     {
-                        result = analysisType switch
-                        {
-                            "Dark / Bright" => AnalyzeBrightness(ImageToBitArray(bitmap), bitmap.Width, bitmap.Height, threadCount),
-                            "Warm / Cold" => AnalyzeTemperature(ImageToBitArray(bitmap), bitmap.Width, bitmap.Height, threadCount),
-                            "Red / Green / Blue" => AnalyzeDominantChannel(ImageToBitArray(bitmap), bitmap.Width, bitmap.Height, threadCount),
-                            _ => throw new InvalidOperationException("Invalid analysis type")
-                        };
-                    }
-                    else
-                    {
-                        result = "Not implemented";
-                    }
+                        "Dark / Bright" => AnalyzeBrightness(bitmap, threadCount),
+                        // "Warm / Cold" => AnalyzeTemperature(ImageToBitArray(bitmap), bitmap.Width, bitmap.Height, threadCount),
+                        // "Red / Green / Blue" => AnalyzeDominantChannel(ImageToBitArray(bitmap), bitmap.Width, bitmap.Height, threadCount),
+                        _ => throw new InvalidOperationException("Invalid analysis type")
+                    };
 
                     stopwatch.Stop();
                     totalTime += stopwatch.ElapsedMilliseconds;
                 }
 
-                double averageTime = totalTime / 5; // Calculate average time over 5 runs
+                double averageTime = totalTime / 5;
                 totalProcessingTime += TimeSpan.FromMilliseconds(averageTime);
 
                 results.AppendLine($"Threads: {threadCount}, Result: {result}, Average Time: {averageTime} ms");
@@ -87,139 +180,5 @@ namespace ColorsExtractorASM
                 ProcessingTime = totalProcessingTime
             };
         }
-
-
-
-        // Funkcja konwertująca obraz do tablicy bitów RGB
-        private byte[] ImageToBitArray(Bitmap bitmap)
-        {
-            int width = bitmap.Width;
-            int height = bitmap.Height;
-            byte[] bits = new byte[width * height * 3];
-
-            BitmapData bmpData = bitmap.LockBits(
-                new Rectangle(0, 0, width, height),
-                ImageLockMode.ReadOnly,
-                PixelFormat.Format24bppRgb);
-
-            unsafe
-            {
-                byte* ptr = (byte*)bmpData.Scan0;
-                int index = 0;
-
-                for (int y = 0; y < height; y++)
-                {
-                    for (int x = 0; x < width; x++)
-                    {
-                        bits[index++] = ptr[2]; // Red
-                        bits[index++] = ptr[1]; // Green
-                        bits[index++] = ptr[0]; // Blue
-                        ptr += 3;
-                    }
-                    ptr += bmpData.Stride - (width * 3);
-                }
-            }
-
-            bitmap.UnlockBits(bmpData);
-            return bits;
-        }
-
-        // Analiza jasności z wykorzystaniem tablicy bitów
-        private string AnalyzeBrightness(byte[] bits, int width, int height, int threadCount)
-        {
-            int totalPixels = width * height;
-            long brightnessSum = 0;
-
-            Parallel.For(0, threadCount, thread =>
-            {
-                int start = thread * totalPixels / threadCount;
-                int end = (thread + 1) * totalPixels / threadCount;
-                long localSum = 0;
-
-                for (int i = start; i < end; i++)
-                {
-                    int index = i * 3;
-                    byte r = bits[index];
-                    byte g = bits[index + 1];
-                    byte b = bits[index + 2];
-                    localSum += (r + g + b) / 3; // Średnia jasność piksela
-                }
-
-                Interlocked.Add(ref brightnessSum, localSum);
-            });
-
-            double averageBrightness = brightnessSum / (double)totalPixels;
-            return averageBrightness > 128 ? "Bright" : "Dark";
-        }
-
-        // Analiza temperatury kolorów (ciepłe/zimne)
-        private string AnalyzeTemperature(byte[] bits, int width, int height, int threadCount)
-        {
-            int totalPixels = width * height;
-            long temperatureSum = 0;
-
-            Parallel.For(0, threadCount, thread =>
-            {
-                int start = thread * totalPixels / threadCount;
-                int end = (thread + 1) * totalPixels / threadCount;
-                long localSum = 0;
-
-                for (int i = start; i < end; i++)
-                {
-                    int index = i * 3;
-                    byte r = bits[index];
-                    byte b = bits[index + 2];
-                    localSum += r - b; // Różnica pomiędzy czerwoną a niebieską składową
-                }
-
-                Interlocked.Add(ref temperatureSum, localSum);
-            });
-
-            return temperatureSum > 0 ? "Warm" : "Cool";
-        }
-
-        // Analiza dominującego kanału RGB
-        private string AnalyzeDominantChannel(byte[] bits, int width, int height, int threadCount)
-        {
-            int totalPixels = width * height;
-            long redSum = 0, greenSum = 0, blueSum = 0;
-
-            Parallel.For(0, threadCount, thread =>
-            {
-                int start = thread * totalPixels / threadCount;
-                int end = (thread + 1) * totalPixels / threadCount;
-                long localRed = 0, localGreen = 0, localBlue = 0;
-
-                for (int i = start; i < end; i++)
-                {
-                    int index = i * 3;
-                    localRed += bits[index];
-                    localGreen += bits[index + 1];
-                    localBlue += bits[index + 2];
-                }
-
-                Interlocked.Add(ref redSum, localRed);
-                Interlocked.Add(ref greenSum, localGreen);
-                Interlocked.Add(ref blueSum, localBlue);
-            });
-
-            // Porównanie kanałów
-            string message;
-            if (redSum > greenSum && redSum > blueSum)
-            {
-                message = "Red";
-            }
-            else if (greenSum > redSum && greenSum > blueSum)
-            {
-                message = "Green";
-            }
-            else
-            {
-                message = "Blue";
-            }
-
-            return "The most used channel is " + message;
-        }
-
     }
 }

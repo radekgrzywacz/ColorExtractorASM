@@ -57,10 +57,6 @@ namespace ColorsExtractorASM
         private void UpdateLabelWithValue()
         {
             int currentValue = threadNumbers[trackBar1.Value];
-            int x = 5, y = 3;
-
-            // Call the external ASM method
-            // int retVal = MyProc1(x, y);
 
             threads_number.Text = $"Threads: {currentValue}";
         }
@@ -76,7 +72,7 @@ namespace ColorsExtractorASM
             // Get thread count
             int threadCount = threadNumbers[trackBar1.Value];
 
-            if (!asm_button.Checked && !x64_button.Checked)
+            if (!asm_button.Checked && !cSharp_button.Checked)
             {
                 MessageBox.Show("Please select a library!");
                 return;
@@ -91,35 +87,22 @@ namespace ColorsExtractorASM
 
             AnalysisResult? result = null;
 
-            if (x64_button.Checked)
+            analyzer.asmChecked = asm_button.Checked ? true : false;
+
+            try
             {
-                try
-                {
-                    //result = colorAnalyzer.AnalyzeImage(selectedImage, threadCount,
-                    //    (ColorAnalyzer.AnalysisType)action);
-                    result = analyzer.AnalyzeImageSimple(selectedImage, threadCount, action, false);
-                    // MessageBox.Show($"Analyzing in x64");
-                }
-                catch (Exception ex)
-                {
-                    MessageBox.Show($"Error during analysis: {ex.Message}");
-                    return;
-                }
+                //result = colorAnalyzer.AnalyzeImage(selectedImage, threadCount,
+                //    (ColorAnalyzer.AnalysisType)action);
+                result = analyzer.AnalyzeImageSimple(selectedImage, threadCount, action);
+                // MessageBox.Show($"Analyzing in cSharp");
             }
-            else if (asm_button.Checked)
+            catch (Exception ex)
             {
-                try
-                {
-                    result = analyzer.AnalyzeImageSimple(selectedImage, threadCount, action, true);
-                    //result = colorAnalyzer.AnalyzeImage(selectedImage, threadCount,
-                    //    (ColorAnalyzer.AnalysisType)action);
-                }
-                catch (Exception ex)
-                {
-                    MessageBox.Show($"Error during analysis: {ex.Message}");
-                    return;
-                }
+                MessageBox.Show($"Error during analysis: {ex.Message}");
+                return;
             }
+
+
             // Display the result
             ms_counter_run_simp.Text = $"Result: {result.Result}\n" +
                                           $"Processing Time: {result.ProcessingTime.TotalMilliseconds:F2} ms\n" +
@@ -154,7 +137,7 @@ namespace ColorsExtractorASM
             };
 
             // List to hold the results
-            List<(string PhotoName, AnalysisResult x64Result, AnalysisResult asmResult)> consolidatedResults = new();
+            List<(string PhotoName, AnalysisResult cSharpResult, AnalysisResult asmResult)> consolidatedResults = new();
 
             foreach (string path in photoPaths)
             {
@@ -167,11 +150,11 @@ namespace ColorsExtractorASM
                 Bitmap photo = new Bitmap(path);
 
                 // Perform analyses
-                AnalysisResult x64Result = analyzer.AnalyzeImageWithTests(photo, threadCounts, analysisType, false);
+                AnalysisResult cSharpResult = analyzer.AnalyzeImageWithTests(photo, threadCounts, analysisType, false);
                 AnalysisResult asmResult = analyzer.AnalyzeImageWithTests(photo, threadCounts, analysisType, true);
 
                 // Add to the consolidated results
-                consolidatedResults.Add((Path.GetFileName(path), x64Result, asmResult));
+                consolidatedResults.Add((Path.GetFileName(path), cSharpResult, asmResult));
             }
 
             // Display the consolidated results in one window
@@ -179,7 +162,7 @@ namespace ColorsExtractorASM
         }
 
 
-        private void CreateResultWindow(string title, List<(string PhotoName, AnalysisResult x64Result, AnalysisResult asmResult)> results)
+        private void CreateResultWindow(string title, List<(string PhotoName, AnalysisResult cSharpResult, AnalysisResult asmResult)> results)
         {
             // Create a new form to display the results
             Form resultWindow = new Form
@@ -204,14 +187,14 @@ namespace ColorsExtractorASM
             foreach (var resultEntry in results)
             {
                 resultText.AppendLine($"Photo: {resultEntry.PhotoName}");
-                resultText.AppendLine("x64 Analysis Results:");
-                resultText.AppendLine(resultEntry.x64Result.Result);
-                //resultText.AppendLine($"Total Processing Time: {resultEntry.x64Result.ProcessingTime.TotalMilliseconds} ms");
+                resultText.AppendLine("C# Analysis Results:");
+                resultText.AppendLine(resultEntry.cSharpResult.Result);
+                //resultText.AppendLine($"Total Processing Time: {resultEntry.cSharpResult.ProcessingTime.TotalMilliseconds} ms");
                 resultText.AppendLine();
 
                 resultText.AppendLine("ASM Analysis Results:");
                 resultText.AppendLine(resultEntry.asmResult.Result);
-               // resultText.AppendLine($"Total Processing Time: {resultEntry.asmResult.ProcessingTime.TotalMilliseconds} ms");
+                // resultText.AppendLine($"Total Processing Time: {resultEntry.asmResult.ProcessingTime.TotalMilliseconds} ms");
                 resultText.AppendLine(new string('-', 50));
             }
 
@@ -225,6 +208,24 @@ namespace ColorsExtractorASM
             resultWindow.Show();
         }
 
+        private void Form1_Load(object sender, EventArgs e)
+        {
 
+        }
+
+        private void label1_Click(object sender, EventArgs e)
+        {
+
+        }
+
+        private void run_simple_label_Click(object sender, EventArgs e)
+        {
+
+        }
+
+        private void library_groupBox_Enter(object sender, EventArgs e)
+        {
+
+        }
     }
 }

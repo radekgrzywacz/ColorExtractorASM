@@ -35,7 +35,7 @@
             threads_label = new Label();
             threads_number = new Label();
             library_groupBox = new GroupBox();
-            x64_button = new RadioButton();
+            cSharp_button = new RadioButton();
             asm_button = new RadioButton();
             title = new Label();
             photo_infos_chooser = new ComboBox();
@@ -43,6 +43,8 @@
             run_simple = new Button();
             ms_counter_run_simp = new Label();
             run_with_everything_button = new Button();
+            run_tests_label = new Label();
+            run_simple_label = new Label();
             ((System.ComponentModel.ISupportInitialize)pictureBox1).BeginInit();
             ((System.ComponentModel.ISupportInitialize)trackBar1).BeginInit();
             library_groupBox.SuspendLayout();
@@ -68,7 +70,7 @@
             pictureBox1.Location = new Point(257, 130);
             pictureBox1.Name = "pictureBox1";
             pictureBox1.Size = new Size(278, 262);
-            pictureBox1.SizeMode = PictureBoxSizeMode.CenterImage;
+            pictureBox1.SizeMode = PictureBoxSizeMode.Zoom;
             pictureBox1.TabIndex = 1;
             pictureBox1.TabStop = false;
             // 
@@ -99,7 +101,7 @@
             // 
             // library_groupBox
             // 
-            library_groupBox.Controls.Add(x64_button);
+            library_groupBox.Controls.Add(cSharp_button);
             library_groupBox.Controls.Add(asm_button);
             library_groupBox.Location = new Point(29, 178);
             library_groupBox.Name = "library_groupBox";
@@ -107,17 +109,18 @@
             library_groupBox.TabIndex = 5;
             library_groupBox.TabStop = false;
             library_groupBox.Text = "Choose the library";
+            library_groupBox.Enter += library_groupBox_Enter;
             // 
-            // x64_button
+            // cSharp_button
             // 
-            x64_button.AutoSize = true;
-            x64_button.Location = new Point(6, 47);
-            x64_button.Name = "x64_button";
-            x64_button.Size = new Size(43, 19);
-            x64_button.TabIndex = 1;
-            x64_button.TabStop = true;
-            x64_button.Text = "x64";
-            x64_button.UseVisualStyleBackColor = true;
+            cSharp_button.AutoSize = true;
+            cSharp_button.Location = new Point(6, 47);
+            cSharp_button.Name = "cSharp_button";
+            cSharp_button.Size = new Size(40, 19);
+            cSharp_button.TabIndex = 1;
+            cSharp_button.TabStop = true;
+            cSharp_button.Text = "C#";
+            cSharp_button.UseVisualStyleBackColor = true;
             // 
             // asm_button
             // 
@@ -161,7 +164,7 @@
             // 
             // run_simple
             // 
-            run_simple.Location = new Point(638, 87);
+            run_simple.Location = new Point(638, 162);
             run_simple.Name = "run_simple";
             run_simple.Size = new Size(87, 25);
             run_simple.TabIndex = 9;
@@ -172,7 +175,7 @@
             // ms_counter_run_simp
             // 
             ms_counter_run_simp.AutoSize = true;
-            ms_counter_run_simp.Location = new Point(588, 130);
+            ms_counter_run_simp.Location = new Point(570, 200);
             ms_counter_run_simp.Name = "ms_counter_run_simp";
             ms_counter_run_simp.Size = new Size(29, 15);
             ms_counter_run_simp.TabIndex = 10;
@@ -180,7 +183,7 @@
             // 
             // run_with_everything_button
             // 
-            run_with_everything_button.Location = new Point(638, 219);
+            run_with_everything_button.Location = new Point(638, 314);
             run_with_everything_button.Name = "run_with_everything_button";
             run_with_everything_button.Size = new Size(87, 25);
             run_with_everything_button.TabIndex = 11;
@@ -188,11 +191,35 @@
             run_with_everything_button.UseVisualStyleBackColor = true;
             run_with_everything_button.Click += run_with_everything_button_Click;
             // 
+            // run_tests_label
+            // 
+            run_tests_label.AutoSize = true;
+            run_tests_label.Font = new Font("Segoe UI", 11.25F, FontStyle.Bold | FontStyle.Italic, GraphicsUnit.Point, 0);
+            run_tests_label.Location = new Point(601, 271);
+            run_tests_label.Name = "run_tests_label";
+            run_tests_label.Size = new Size(157, 40);
+            run_tests_label.TabIndex = 12;
+            run_tests_label.Text = "This button will run\nall the required tests";
+            run_tests_label.Click += label1_Click;
+            // 
+            // run_simple_label
+            // 
+            run_simple_label.AutoSize = true;
+            run_simple_label.Font = new Font("Segoe UI", 11.25F, FontStyle.Bold | FontStyle.Italic, GraphicsUnit.Point, 0);
+            run_simple_label.Location = new Point(601, 119);
+            run_simple_label.Name = "run_simple_label";
+            run_simple_label.Size = new Size(150, 40);
+            run_simple_label.TabIndex = 13;
+            run_simple_label.Text = "This button will run\njust chosen options";
+            run_simple_label.Click += run_simple_label_Click;
+            // 
             // Form1
             // 
             AutoScaleDimensions = new SizeF(7F, 15F);
             AutoScaleMode = AutoScaleMode.Font;
             ClientSize = new Size(800, 450);
+            Controls.Add(run_simple_label);
+            Controls.Add(run_tests_label);
             Controls.Add(run_with_everything_button);
             Controls.Add(ms_counter_run_simp);
             Controls.Add(run_simple);
@@ -207,6 +234,7 @@
             Controls.Add(image_loader_button);
             Name = "Form1";
             Text = "Colors Extractor ASM";
+            Load += Form1_Load;
             ((System.ComponentModel.ISupportInitialize)pictureBox1).EndInit();
             ((System.ComponentModel.ISupportInitialize)trackBar1).EndInit();
             library_groupBox.ResumeLayout(false);
@@ -225,12 +253,14 @@
         private Label threads_number;
         private GroupBox library_groupBox;
         private RadioButton asm_button;
-        private RadioButton x64_button;
+        private RadioButton cSharp_button;
         private Label title;
         private ComboBox photo_infos_chooser;
         private Label info_chooser_label;
         private Button run_simple;
         private Label ms_counter_run_simp;
         private Button run_with_everything_button;
+        private Label run_tests_label;
+        private Label run_simple_label;
     }
 }

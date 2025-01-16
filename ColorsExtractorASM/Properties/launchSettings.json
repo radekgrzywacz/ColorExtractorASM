@@ -1,0 +1,8 @@
+{
+  "profiles": {
+    "ColorsExtractorASM": {
+      "commandName": "Project",
+      "nativeDebugging": true
+    }
+  }
+}

@@ -1,2 +1,3 @@
 LIBRARY JAAsm
-EXPORTS MyProc1
+EXPORTS CalculateAverageBrightness 
+		
