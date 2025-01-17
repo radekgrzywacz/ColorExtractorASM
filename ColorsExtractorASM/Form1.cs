@@ -10,7 +10,7 @@ namespace ColorsExtractorASM
     public partial class Form1 : Form
     {
 
-        private readonly int[] threadNumbers = { 1, 2, 4, 8, 16, 32, 64 };
+        //private readonly int[] threadNumbers = { 1, 2, 4, 8, 16, 32, 64 };
         private Bitmap selectedImage;
         private Analyzer analyzer;
 
@@ -20,7 +20,7 @@ namespace ColorsExtractorASM
 
             // Configure TrackBar
             trackBar1.Minimum = 0;
-            trackBar1.Maximum = threadNumbers.Length - 1;
+            trackBar1.Maximum = 64;
             trackBar1.TickFrequency = 1;
             trackBar1.SmallChange = 1;
             trackBar1.LargeChange = 1;
@@ -56,7 +56,7 @@ namespace ColorsExtractorASM
 
         private void UpdateLabelWithValue()
         {
-            int currentValue = threadNumbers[trackBar1.Value];
+            int currentValue = trackBar1.Value;
 
             threads_number.Text = $"Threads: {currentValue}";
         }
@@ -70,7 +70,7 @@ namespace ColorsExtractorASM
             }
 
             // Get thread count
-            int threadCount = threadNumbers[trackBar1.Value];
+            int threadCount = trackBar1.Value;
 
             if (!asm_button.Checked && !cSharp_button.Checked)
             {
@@ -124,7 +124,7 @@ namespace ColorsExtractorASM
             }
 
             string analysisType = photo_infos_chooser.SelectedItem.ToString();
-            int[] threadCounts = threadNumbers;
+            int[] threadCounts = { 1, 2, 4, 8, 16, 32, 64 };
 
             // Paths for the three photos
             string projectDirectory = Path.GetFullPath(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, @"..\..\..\..\"));
@@ -224,6 +224,11 @@ namespace ColorsExtractorASM
         }
 
         private void library_groupBox_Enter(object sender, EventArgs e)
+        {
+
+        }
+
+        private void trackBar1_Scroll_1(object sender, EventArgs e)
         {
 
         }

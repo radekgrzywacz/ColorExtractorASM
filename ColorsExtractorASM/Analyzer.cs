@@ -35,47 +35,28 @@ namespace ColorsExtractorASM
 
         private unsafe string AnalyzeBrightness(Bitmap bitmap, int threadCount)
         {
-            double totalBrightness = 0.0;
-            if (!asmChecked)
-            {
-                totalBrightness = ProcessImageSegments(bitmap, threadCount, analyzerRegular.AnalyzeBrightnessRegular);
-            }
-            else
-            {
-                totalBrightness = ProcessImageSegments(bitmap, threadCount, CalculateAverageBrightness);
-            }
-
-            totalBrightness = ProcessImageSegments(bitmap, threadCount, CalculateAverageBrightness);
+            double totalBrightness = asmChecked
+                ? ProcessImageSegments(bitmap, threadCount, CalculateAverageBrightness, "Brightness")
+                : ProcessImageSegments(bitmap, threadCount, analyzerRegular.AnalyzeBrightnessRegular, "Brightness");
 
             return totalBrightness < 128 ? $"Dark {totalBrightness:F2}" : $"Bright {totalBrightness:F2}";
         }
 
         private unsafe string AnalyzeTemperature(Bitmap bitmap, int threadCount)
         {
-            double temperature = 0.0;
-            if (!asmChecked)
-            {
-                temperature = ProcessImageSegments(bitmap, threadCount, analyzerRegular.AnalyzeTemperatureRegular);
-            }
-            else
-            {
-                temperature = ProcessImageSegments(bitmap, threadCount, CalculateTemperature);
-            }
+            double temperature = asmChecked
+                ? ProcessImageSegments(bitmap, threadCount, CalculateTemperature, "Temperature")
+                : ProcessImageSegments(bitmap, threadCount, analyzerRegular.AnalyzeTemperatureRegular, "Temperature");
 
             return temperature < 0 ? $"Cold {temperature:F2}" : $"Warm {temperature:F2}";
         }
 
-        public unsafe string AnalyzeDominantChannel(Bitmap bitmap, int threadCount)
+
+        private unsafe string AnalyzeDominantChannel(Bitmap bitmap, int threadCount)
         {
-            double channelIndex = 0.0;
-            if (!asmChecked)
-            {
-                channelIndex = ProcessImageSegments(bitmap, threadCount, analyzerRegular.AnalyzeDominantChannelRegular);
-            }
-            else
-            {
-                channelIndex = ProcessImageSegments(bitmap, threadCount, CalculateDominantChannel);
-            }
+            double channelIndex = asmChecked
+                ? ProcessImageSegments(bitmap, threadCount, CalculateDominantChannel, "DominantChannel")
+                : ProcessImageSegments(bitmap, threadCount, analyzerRegular.AnalyzeDominantChannelRegular, "DominantChannel");
 
             string dominantChannel = channelIndex switch
             {
@@ -87,7 +68,8 @@ namespace ColorsExtractorASM
             return $"The most used channel is {dominantChannel}";
         }
 
-        private unsafe double ProcessImageSegments(Bitmap image, int threadCount, AsmProcessDelegate processFunction)
+
+        private unsafe double ProcessImageSegments(Bitmap image, int threadCount, AsmProcessDelegate processFunction, string analysisType)
         {
             // Validate and adjust thread count
             if (threadCount <= 0)
@@ -98,6 +80,10 @@ namespace ColorsExtractorASM
             int imageWidth = image.Width;
             int imageHeight = image.Height;
 
+            // Check for edge cases
+            if (imageWidth == 0 || imageHeight == 0)
+                return 0.0;
+
             BitmapData bitmapData = image.LockBits(
                 new Rectangle(0, 0, imageWidth, imageHeight),
                 ImageLockMode.ReadOnly,
@@ -106,38 +92,47 @@ namespace ColorsExtractorASM
             try
             {
                 int totalPixels = imageWidth * imageHeight;
-                int* sum = stackalloc int[threadCount]; // Separate accumulator for each thread
+                ConcurrentBag<long> sums = new ConcurrentBag<long>();
 
-                // Split the image into chunks for parallel processing
-                int chunkSize = (imageHeight + threadCount - 1) / threadCount; // Ceiling division
-                Parallel.For(0, threadCount, i =>
+                // Define chunk size for dynamic load balancing
+                int chunkHeight = 10; // Process 10 rows per chunk for better distribution
+                int totalChunks = (imageHeight + chunkHeight - 1) / chunkHeight;
+
+                Parallel.For(0, totalChunks, chunkIndex =>
                 {
-                    int startY = i * chunkSize;
-                    int endY = Math.Min((i + 1) * chunkSize, imageHeight);
+                    int startY = chunkIndex * chunkHeight;
+                    int endY = Math.Min(startY + chunkHeight, imageHeight);
                     int pixelsInChunk = (endY - startY) * imageWidth;
 
-                    if (pixelsInChunk > 0) // Only process if there are pixels in this chunk
+                    if (pixelsInChunk > 0)
                     {
                         byte* startPtr = (byte*)bitmapData.Scan0 + (startY * bitmapData.Stride);
-                        processFunction(startPtr, pixelsInChunk, &sum[i]);
+                        // Inside Parallel.For
+                        int localSum = 0; // Change from long to int
+                        processFunction(startPtr, pixelsInChunk, &localSum);
+                        sums.Add(localSum);
                     }
                 });
 
-                // Sum up results from all threads
-                int totalSum = 0;
-                for (int i = 0; i < threadCount; i++)
-                {
-                    totalSum += sum[i];
-                }
+                // Aggregate all partial results
+                long totalSum = sums.Sum();
 
-                // Calculate final average
-                return totalSum / (double)(totalPixels * 3);
+                // Adjust the final result based on the analysis type
+                return analysisType switch
+                {
+                    "Brightness" => totalSum / (double)(totalPixels * 3), // Average of all RGB components
+                    "Temperature" => totalSum / (double)(totalPixels),    // Average R-B difference per pixel
+                    "DominantChannel" => totalSum,                        // No division needed
+                    _ => throw new InvalidOperationException("Invalid analysis type")
+                };
             }
             finally
             {
                 image.UnlockBits(bitmapData);
             }
         }
+
+
 
 
         private class ImageSegment

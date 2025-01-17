@@ -125,9 +125,11 @@ cleanup:
     ret
 CalculateTemperature endp
 
+
 CalculateDominantChannel proc
     push rbp
     mov rbp, rsp
+    sub rsp, 24                 ; Reserve space for local variables
     
     ; Initialize accumulators to zero
     vxorps ymm0, ymm0, ymm0    ; red sum
@@ -136,7 +138,7 @@ CalculateDominantChannel proc
     
     ; Process 8 pixels at a time
     mov rax, rdx
-    shr rax, 3                  ; divide by 8 to get number of full vector operations
+    shr rax, 3                  ; divide by 8
     
     xor r9, r9                  ; counter
     
@@ -147,17 +149,16 @@ process_loop:
     ; Load 8 pixels into YMM3
     vmovdqu ymm3, ymmword ptr [rcx + r9*4]
     
-    ; Extract and sum each channel
-    vpand ymm4, ymm3, [mask_blue]   ; Extract blue
-    vpsrld ymm4, ymm4, 0            ; No shift needed for blue
+    ; Extract and sum each channel (BGRA format)
+    vpand ymm4, ymm3, [mask_blue]   ; Extract blue (index 0)
     vpaddd ymm2, ymm2, ymm4         ; Add to blue sum
     
-    vpand ymm4, ymm3, [mask_green]  ; Extract green
-    vpsrld ymm4, ymm4, 8            ; Shift right by 8
+    vpand ymm4, ymm3, [mask_green]  ; Extract green (index 1)
+    vpsrld ymm4, ymm4, 8
     vpaddd ymm1, ymm1, ymm4         ; Add to green sum
     
-    vpand ymm4, ymm3, [mask_red]    ; Extract red
-    vpsrld ymm4, ymm4, 16           ; Shift right by 16
+    vpand ymm4, ymm3, [mask_red]    ; Extract red (index 2)
+    vpsrld ymm4, ymm4, 16
     vpaddd ymm0, ymm0, ymm4         ; Add to red sum
     
     inc r9
@@ -165,54 +166,57 @@ process_loop:
     
 cleanup:
     ; Horizontal sum for each channel
-    ; Red
-    vextracti128 xmm3, ymm0, 1      ; Extract upper 128 bits
-    vpaddd xmm0, xmm0, xmm3         ; Add upper to lower
-    vphaddd xmm0, xmm0, xmm0        ; Horizontal add
-    vphaddd xmm0, xmm0, xmm0        ; One more horizontal add
-    vmovd dword ptr [r8], xmm0      ; Store red sum
+    vextracti128 xmm3, ymm0, 1
+    vpaddd xmm0, xmm0, xmm3
+    vphaddd xmm0, xmm0, xmm0
+    vphaddd xmm0, xmm0, xmm0
+    vmovd dword ptr [rsp], xmm0     ; Store red sum
     
-    ; Green
     vextracti128 xmm3, ymm1, 1
     vpaddd xmm1, xmm1, xmm3
     vphaddd xmm1, xmm1, xmm1
     vphaddd xmm1, xmm1, xmm1
-    vmovd dword ptr [r8 + 4], xmm1  ; Store green sum
+    vmovd dword ptr [rsp + 8], xmm1 ; Store green sum
     
-    ; Blue
     vextracti128 xmm3, ymm2, 1
     vpaddd xmm2, xmm2, xmm3
     vphaddd xmm2, xmm2, xmm2
     vphaddd xmm2, xmm2, xmm2
-    vmovd dword ptr [r8 + 8], xmm2  ; Store blue sum
+    vmovd dword ptr [rsp + 16], xmm2; Store blue sum
     
-    ; Find max value and return index (0=Red, 1=Green, 2=Blue)
-    mov eax, dword ptr [r8]         ; Load red sum
-    mov ecx, dword ptr [r8 + 4]     ; Load green sum
-    mov edx, dword ptr [r8 + 8]     ; Load blue sum
+    ; Load the sums
+    mov eax, dword ptr [rsp]        ; red
+    mov ecx, dword ptr [rsp + 8]    ; green
+    mov edx, dword ptr [rsp + 16]   ; blue
     
-    cmp eax, ecx                    ; Compare red and green
-    jl check_green                  ; If red < green, check green vs blue
-    cmp eax, edx                    ; If red >= green, compare red with blue
-    jl blue_max                     ; If red < blue, blue is max
-    mov eax, 0                      ; Red is max, return 0
-    jmp end_compare
+    ; Exact same logic as C# version
+    ; if (totalRed > totalGreen && totalRed > totalBlue)
+    xor r10d, r10d                  ; Initialize result to 0 (red)
+    cmp eax, ecx                    ; Compare red with green
+    jle check_green                 ; If red <= green, check green
+    cmp eax, edx                    ; Compare red with blue
+    jle check_green                 ; If red <= blue, check green
+    jmp store_result                ; Red is dominant
     
 check_green:
+    ; else if (totalGreen > totalRed && totalGreen > totalBlue)
+    cmp ecx, eax                    ; Compare green with red
+    jle blue_dominant              ; If green <= red, blue is dominant
     cmp ecx, edx                    ; Compare green with blue
-    jl blue_max                     ; If green < blue, blue is max
-    mov eax, 1                      ; Green is max, return 1
-    jmp end_compare
+    jle blue_dominant              ; If green <= blue, blue is dominant
+    mov r10d, 1                     ; Green is dominant
+    jmp store_result
     
-blue_max:
-    mov eax, 2                      ; Blue is max, return 2
+blue_dominant:
+    mov r10d, 2                     ; Blue is dominant
     
-end_compare:
-    mov dword ptr [r8], eax         ; Store result (0=Red, 1=Green, 2=Blue)
+store_result:
+    mov dword ptr [r8], r10d        ; Store final result
     
+    add rsp, 24                     ; Clean up stack
     pop rbp
     ret
 CalculateDominantChannel endp
-end
+
 
 end

@@ -56,9 +56,10 @@
             // 
             // image_loader_button
             // 
-            image_loader_button.Location = new Point(350, 93);
+            image_loader_button.Location = new Point(400, 124);
+            image_loader_button.Margin = new Padding(3, 4, 3, 4);
             image_loader_button.Name = "image_loader_button";
-            image_loader_button.Size = new Size(106, 31);
+            image_loader_button.Size = new Size(121, 41);
             image_loader_button.TabIndex = 0;
             image_loader_button.Text = "Load image";
             image_loader_button.UseVisualStyleBackColor = true;
@@ -67,35 +68,38 @@
             // pictureBox1
             // 
             pictureBox1.BorderStyle = BorderStyle.FixedSingle;
-            pictureBox1.Location = new Point(257, 130);
+            pictureBox1.Location = new Point(294, 173);
+            pictureBox1.Margin = new Padding(3, 4, 3, 4);
             pictureBox1.Name = "pictureBox1";
-            pictureBox1.Size = new Size(278, 262);
+            pictureBox1.Size = new Size(317, 349);
             pictureBox1.SizeMode = PictureBoxSizeMode.Zoom;
             pictureBox1.TabIndex = 1;
             pictureBox1.TabStop = false;
             // 
             // trackBar1
             // 
-            trackBar1.Location = new Point(29, 114);
+            trackBar1.Location = new Point(25, 142);
+            trackBar1.Margin = new Padding(3, 4, 3, 4);
             trackBar1.Name = "trackBar1";
-            trackBar1.Size = new Size(164, 45);
+            trackBar1.Size = new Size(187, 56);
             trackBar1.TabIndex = 2;
+            trackBar1.Scroll += trackBar1_Scroll_1;
             // 
             // threads_label
             // 
             threads_label.AutoSize = true;
-            threads_label.Location = new Point(41, 97);
+            threads_label.Location = new Point(47, 129);
             threads_label.Name = "threads_label";
-            threads_label.Size = new Size(107, 15);
+            threads_label.Size = new Size(134, 20);
             threads_label.TabIndex = 3;
             threads_label.Text = "Number of threads";
             // 
             // threads_number
             // 
             threads_number.AutoSize = true;
-            threads_number.Location = new Point(102, 144);
+            threads_number.Location = new Point(117, 192);
             threads_number.Name = "threads_number";
-            threads_number.Size = new Size(13, 15);
+            threads_number.Size = new Size(17, 20);
             threads_number.TabIndex = 4;
             threads_number.Text = "1";
             // 
@@ -103,9 +107,11 @@
             // 
             library_groupBox.Controls.Add(cSharp_button);
             library_groupBox.Controls.Add(asm_button);
-            library_groupBox.Location = new Point(29, 178);
+            library_groupBox.Location = new Point(33, 237);
+            library_groupBox.Margin = new Padding(3, 4, 3, 4);
             library_groupBox.Name = "library_groupBox";
-            library_groupBox.Size = new Size(157, 71);
+            library_groupBox.Padding = new Padding(3, 4, 3, 4);
+            library_groupBox.Size = new Size(179, 95);
             library_groupBox.TabIndex = 5;
             library_groupBox.TabStop = false;
             library_groupBox.Text = "Choose the library";
@@ -114,9 +120,10 @@
             // cSharp_button
             // 
             cSharp_button.AutoSize = true;
-            cSharp_button.Location = new Point(6, 47);
+            cSharp_button.Location = new Point(7, 63);
+            cSharp_button.Margin = new Padding(3, 4, 3, 4);
             cSharp_button.Name = "cSharp_button";
-            cSharp_button.Size = new Size(40, 19);
+            cSharp_button.Size = new Size(48, 24);
             cSharp_button.TabIndex = 1;
             cSharp_button.TabStop = true;
             cSharp_button.Text = "C#";
@@ -125,9 +132,10 @@
             // asm_button
             // 
             asm_button.AutoSize = true;
-            asm_button.Location = new Point(6, 22);
+            asm_button.Location = new Point(7, 29);
+            asm_button.Margin = new Padding(3, 4, 3, 4);
             asm_button.Name = "asm_button";
-            asm_button.Size = new Size(49, 19);
+            asm_button.Size = new Size(59, 24);
             asm_button.TabIndex = 0;
             asm_button.TabStop = true;
             asm_button.Text = "Asm";
@@ -138,35 +146,37 @@
             title.AutoSize = true;
             title.Font = new Font("Microsoft Sans Serif", 30F, FontStyle.Italic, GraphicsUnit.Point, 0);
             title.ForeColor = Color.Purple;
-            title.Location = new Point(202, 9);
+            title.Location = new Point(231, 12);
             title.Name = "title";
-            title.Size = new Size(310, 46);
+            title.Size = new Size(384, 58);
             title.TabIndex = 6;
             title.Text = "Colors Extractor";
             // 
             // photo_infos_chooser
             // 
             photo_infos_chooser.FormattingEnabled = true;
-            photo_infos_chooser.Location = new Point(29, 301);
+            photo_infos_chooser.Location = new Point(33, 401);
+            photo_infos_chooser.Margin = new Padding(3, 4, 3, 4);
             photo_infos_chooser.Name = "photo_infos_chooser";
-            photo_infos_chooser.Size = new Size(157, 23);
+            photo_infos_chooser.Size = new Size(179, 28);
             photo_infos_chooser.TabIndex = 7;
             photo_infos_chooser.SelectedIndexChanged += photo_infos_chooser_SelectedIndexChanged;
             // 
             // info_chooser_label
             // 
             info_chooser_label.AutoSize = true;
-            info_chooser_label.Location = new Point(29, 268);
+            info_chooser_label.Location = new Point(33, 357);
             info_chooser_label.Name = "info_chooser_label";
-            info_chooser_label.Size = new Size(153, 30);
+            info_chooser_label.Size = new Size(191, 40);
             info_chooser_label.TabIndex = 8;
             info_chooser_label.Text = "What do you want to know \nabout this photo?";
             // 
             // run_simple
             // 
-            run_simple.Location = new Point(638, 162);
+            run_simple.Location = new Point(729, 216);
+            run_simple.Margin = new Padding(3, 4, 3, 4);
             run_simple.Name = "run_simple";
-            run_simple.Size = new Size(87, 25);
+            run_simple.Size = new Size(99, 33);
             run_simple.TabIndex = 9;
             run_simple.Text = "Run";
             run_simple.UseVisualStyleBackColor = true;
@@ -175,17 +185,18 @@
             // ms_counter_run_simp
             // 
             ms_counter_run_simp.AutoSize = true;
-            ms_counter_run_simp.Location = new Point(570, 200);
+            ms_counter_run_simp.Location = new Point(651, 267);
             ms_counter_run_simp.Name = "ms_counter_run_simp";
-            ms_counter_run_simp.Size = new Size(29, 15);
+            ms_counter_run_simp.Size = new Size(36, 20);
             ms_counter_run_simp.TabIndex = 10;
             ms_counter_run_simp.Text = "0ms";
             // 
             // run_with_everything_button
             // 
-            run_with_everything_button.Location = new Point(638, 314);
+            run_with_everything_button.Location = new Point(729, 419);
+            run_with_everything_button.Margin = new Padding(3, 4, 3, 4);
             run_with_everything_button.Name = "run_with_everything_button";
-            run_with_everything_button.Size = new Size(87, 25);
+            run_with_everything_button.Size = new Size(99, 33);
             run_with_everything_button.TabIndex = 11;
             run_with_everything_button.Text = "Test";
             run_with_everything_button.UseVisualStyleBackColor = true;
@@ -195,9 +206,9 @@
             // 
             run_tests_label.AutoSize = true;
             run_tests_label.Font = new Font("Segoe UI", 11.25F, FontStyle.Bold | FontStyle.Italic, GraphicsUnit.Point, 0);
-            run_tests_label.Location = new Point(601, 271);
+            run_tests_label.Location = new Point(687, 361);
             run_tests_label.Name = "run_tests_label";
-            run_tests_label.Size = new Size(157, 40);
+            run_tests_label.Size = new Size(193, 50);
             run_tests_label.TabIndex = 12;
             run_tests_label.Text = "This button will run\nall the required tests";
             run_tests_label.Click += label1_Click;
@@ -206,18 +217,18 @@
             // 
             run_simple_label.AutoSize = true;
             run_simple_label.Font = new Font("Segoe UI", 11.25F, FontStyle.Bold | FontStyle.Italic, GraphicsUnit.Point, 0);
-            run_simple_label.Location = new Point(601, 119);
+            run_simple_label.Location = new Point(687, 159);
             run_simple_label.Name = "run_simple_label";
-            run_simple_label.Size = new Size(150, 40);
+            run_simple_label.Size = new Size(184, 50);
             run_simple_label.TabIndex = 13;
             run_simple_label.Text = "This button will run\njust chosen options";
             run_simple_label.Click += run_simple_label_Click;
             // 
             // Form1
             // 
-            AutoScaleDimensions = new SizeF(7F, 15F);
+            AutoScaleDimensions = new SizeF(8F, 20F);
             AutoScaleMode = AutoScaleMode.Font;
-            ClientSize = new Size(800, 450);
+            ClientSize = new Size(914, 600);
             Controls.Add(run_simple_label);
             Controls.Add(run_tests_label);
             Controls.Add(run_with_everything_button);
@@ -232,6 +243,7 @@
             Controls.Add(trackBar1);
             Controls.Add(pictureBox1);
             Controls.Add(image_loader_button);
+            Margin = new Padding(3, 4, 3, 4);
             Name = "Form1";
             Text = "Colors Extractor ASM";
             Load += Form1_Load;

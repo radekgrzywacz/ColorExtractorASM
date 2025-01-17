@@ -12,155 +12,74 @@ namespace RegularLib
 {
     public class AnalyzerRegular
     {
+        // Method to calculate average brightness
         public unsafe void AnalyzeBrightnessRegular(byte* pixels, int pixelCount, int* sum)
         {
-            int vectorSize = Vector<byte>.Count; // Number of bytes the vector can handle at once
             int localSum = 0;
 
-            // Accumulator for intermediate sums
-            Vector<int> vectorSum = Vector<int>.Zero;
-
-            int totalBytes = pixelCount * 4; // Total number of bytes (BGRA format)
-            int i = 0;
-
-            // Process as many pixels as possible in chunks of `vectorSize`
-            for (; i <= totalBytes - vectorSize; i += vectorSize)
+            // Process each pixel
+            for (int i = 0; i < pixelCount; i++)
             {
-                // Create a temporary array to load data into the vector
-                byte[] tempBytes = new byte[vectorSize];
-                for (int j = 0; j < vectorSize; j++)
-                {
-                    tempBytes[j] = pixels[i + j];
-                }
+                // BGRA format: blue, green, red, alpha
+                byte blue = pixels[i * 4];      // Blue channel
+                byte green = pixels[i * 4 + 1]; // Green channel
+                byte red = pixels[i * 4 + 2];   // Red channel
 
-                // Load bytes into a vector
-                Vector<byte> pixelVector = new Vector<byte>(tempBytes);
-
-                // Accumulate RGB values
-                for (int k = 0; k < vectorSize; k += 4) // BGRA format, process every 4 bytes
-                {
-                    int blue = pixelVector[k];
-                    int green = pixelVector[k + 1];
-                    int red = pixelVector[k + 2];
-
-                    vectorSum += new Vector<int>(blue + green + red);
-                }
-            }
-
-            // Sum up the elements of vectorSum into localSum
-            for (int j = 0; j < Vector<int>.Count; j++)
-            {
-                localSum += vectorSum[j];
-            }
-
-            // Process remaining pixels that didn't fit into the vectorized loop
-            for (; i < totalBytes; i += 4)
-            {
-                localSum += pixels[i] + pixels[i + 1] + pixels[i + 2]; // Add Blue, Green, Red
+                // Sum the RGB components for brightness calculation
+                localSum += blue + green + red;
             }
 
             // Store the result in the sum pointer
             *sum = localSum;
         }
 
-
-
+        // Method to calculate temperature (Red - Blue)
         public unsafe void AnalyzeTemperatureRegular(byte* pixels, int pixelCount, int* sum)
         {
-            int vectorSize = Vector<byte>.Count;
             int localSum = 0;
-            Vector<int> vectorSum = Vector<int>.Zero;
 
-            int totalBytes = pixelCount * 4; // BGRA format
-            int i = 0;
-
-            // Process vectors
-            for (; i <= totalBytes - vectorSize; i += vectorSize)
+            // Process each pixel
+            for (int i = 0; i < pixelCount; i++)
             {
-                byte[] tempBytes = new byte[vectorSize];
-                for (int j = 0; j < vectorSize; j++)
-                {
-                    tempBytes[j] = pixels[i + j];
-                }
+                // BGRA format: blue, green, red, alpha
+                byte blue = pixels[i * 4];      // Blue channel
+                byte red = pixels[i * 4 + 2];   // Red channel
 
-                Vector<byte> pixelVector = new Vector<byte>(tempBytes);
-
-                for (int k = 0; k < vectorSize; k += 4) // BGRA format
-                {
-                    int blue = pixelVector[k];      // Blue channel
-                    int red = pixelVector[k + 2];   // Red channel
-                    vectorSum += new Vector<int>(red - blue); // Temperature calculation (R-B)
-                }
+                // Calculate temperature (Red - Blue)
+                localSum += red - blue;
             }
 
-            // Sum vector elements
-            for (int j = 0; j < Vector<int>.Count; j++)
-            {
-                localSum += vectorSum[j];
-            }
-
-            // Handle remaining pixels
-            for (; i < totalBytes; i += 4)
-            {
-                localSum += pixels[i + 2] - pixels[i]; // Red - Blue
-            }
-
+            // Store the result in the sum pointer
             *sum = localSum;
         }
 
+        // Method to calculate dominant channel
         public unsafe void AnalyzeDominantChannelRegular(byte* pixels, int pixelCount, int* result)
         {
-            int vectorSize = Vector<byte>.Count;
-            Vector<int> redSum = Vector<int>.Zero;
-            Vector<int> greenSum = Vector<int>.Zero;
-            Vector<int> blueSum = Vector<int>.Zero;
-
-            int totalBytes = pixelCount * 4; // BGRA format
-            int i = 0;
-
-            // Process vectors
-            for (; i <= totalBytes - vectorSize; i += vectorSize)
-            {
-                byte[] tempBytes = new byte[vectorSize];
-                for (int j = 0; j < vectorSize; j++)
-                {
-                    tempBytes[j] = pixels[i + j];
-                }
-
-                Vector<byte> pixelVector = new Vector<byte>(tempBytes);
-
-                for (int k = 0; k < vectorSize; k += 4) // BGRA format
-                {
-                    blueSum += new Vector<int>(pixelVector[k]);
-                    greenSum += new Vector<int>(pixelVector[k + 1]);
-                    redSum += new Vector<int>(pixelVector[k + 2]);
-                }
-            }
-
-            // Sum up each channel
             int totalRed = 0, totalGreen = 0, totalBlue = 0;
-            for (int j = 0; j < Vector<int>.Count; j++)
+
+            // Process each pixel
+            for (int i = 0; i < pixelCount; i++)
             {
-                totalRed += redSum[j];
-                totalGreen += greenSum[j];
-                totalBlue += blueSum[j];
+                // BGRA format: blue, green, red, alpha
+                byte blue = pixels[i * 4];      // Blue channel
+                byte green = pixels[i * 4 + 1]; // Green channel
+                byte red = pixels[i * 4 + 2];   // Red channel
+
+                // Accumulate the sum of each channel
+                totalBlue += blue;
+                totalGreen += green;
+                totalRed += red;
             }
 
-            // Handle remaining pixels
-            for (; i < totalBytes; i += 4)
-            {
-                totalBlue += pixels[i];
-                totalGreen += pixels[i + 1];
-                totalRed += pixels[i + 2];
-            }
-
-            // Determine dominant channel (0=Red, 1=Green, 2=Blue)
+            // Determine the dominant channel
             if (totalRed > totalGreen && totalRed > totalBlue)
-                *result = 0;
+                *result = 0; // Red is dominant
             else if (totalGreen > totalRed && totalGreen > totalBlue)
-                *result = 1;
+                *result = 1; // Green is dominant
             else
-                *result = 2;
+                *result = 2; // Blue is dominant
         }
     }
 }
+
