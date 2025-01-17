@@ -1,3 +1,4 @@
 LIBRARY JAAsm
-EXPORTS CalculateAverageBrightness 
-		
+EXPORTS CalculateAverageBrightness
+		CalculateTemperature
+		CalculateDominantChannel

@@ -65,110 +65,102 @@ namespace RegularLib
 
 
 
-        public string AnalyzeTemperatureRegular(Bitmap bitmap, int threadCount)
+        public unsafe void AnalyzeTemperatureRegular(byte* pixels, int pixelCount, int* sum)
         {
-            int width = bitmap.Width;
-            int height = bitmap.Height;
-            byte[] bits = ImageToBitArray(bitmap);
-            int totalPixels = width * height;
-            long temperatureSum = 0;
+            int vectorSize = Vector<byte>.Count;
+            int localSum = 0;
+            Vector<int> vectorSum = Vector<int>.Zero;
 
-            Parallel.For(0, threadCount, thread =>
+            int totalBytes = pixelCount * 4; // BGRA format
+            int i = 0;
+
+            // Process vectors
+            for (; i <= totalBytes - vectorSize; i += vectorSize)
             {
-                int start = thread * totalPixels / threadCount;
-                int end = (thread + 1) * totalPixels / threadCount;
-                long localSum = 0;
-
-                for (int i = start; i < end; i++)
+                byte[] tempBytes = new byte[vectorSize];
+                for (int j = 0; j < vectorSize; j++)
                 {
-                    int index = i * 3;
-                    byte r = bits[index];
-                    byte b = bits[index + 2];
-                    localSum += r - b;
+                    tempBytes[j] = pixels[i + j];
                 }
 
-                Interlocked.Add(ref temperatureSum, localSum);
-            });
+                Vector<byte> pixelVector = new Vector<byte>(tempBytes);
 
-            return temperatureSum > 0 ? $"Warm {temperatureSum}" : $"Cold {temperatureSum}";
+                for (int k = 0; k < vectorSize; k += 4) // BGRA format
+                {
+                    int blue = pixelVector[k];      // Blue channel
+                    int red = pixelVector[k + 2];   // Red channel
+                    vectorSum += new Vector<int>(red - blue); // Temperature calculation (R-B)
+                }
+            }
+
+            // Sum vector elements
+            for (int j = 0; j < Vector<int>.Count; j++)
+            {
+                localSum += vectorSum[j];
+            }
+
+            // Handle remaining pixels
+            for (; i < totalBytes; i += 4)
+            {
+                localSum += pixels[i + 2] - pixels[i]; // Red - Blue
+            }
+
+            *sum = localSum;
         }
 
-        public string AnalyzeDominantChannelRegular(Bitmap bitmap, int threadCount)
+        public unsafe void AnalyzeDominantChannelRegular(byte* pixels, int pixelCount, int* result)
         {
-            int width = bitmap.Width;
-            int height = bitmap.Height;
-            byte[] bits = ImageToBitArray(bitmap);
-            int totalPixels = width * height;
-            long redSum = 0, greenSum = 0, blueSum = 0;
+            int vectorSize = Vector<byte>.Count;
+            Vector<int> redSum = Vector<int>.Zero;
+            Vector<int> greenSum = Vector<int>.Zero;
+            Vector<int> blueSum = Vector<int>.Zero;
 
-            Parallel.For(0, threadCount, thread =>
+            int totalBytes = pixelCount * 4; // BGRA format
+            int i = 0;
+
+            // Process vectors
+            for (; i <= totalBytes - vectorSize; i += vectorSize)
             {
-
-                int start = thread * totalPixels / threadCount;
-                int end = (thread + 1) * totalPixels / threadCount;
-                long localRed = 0, localGreen = 0, localBlue = 0;
-
-                for (int i = start; i < end; i++)
+                byte[] tempBytes = new byte[vectorSize];
+                for (int j = 0; j < vectorSize; j++)
                 {
-                    int index = i * 3;
-                    localRed += bits[index];
-                    localGreen += bits[index + 1];
-                    localBlue += bits[index + 2];
+                    tempBytes[j] = pixels[i + j];
                 }
 
-                Interlocked.Add(ref redSum, localRed);
-                Interlocked.Add(ref greenSum, localGreen);
-                Interlocked.Add(ref blueSum, localBlue);
-            });
+                Vector<byte> pixelVector = new Vector<byte>(tempBytes);
 
-            string message;
-            if (redSum > greenSum && redSum > blueSum)
-            {
-                message = "Red";
+                for (int k = 0; k < vectorSize; k += 4) // BGRA format
+                {
+                    blueSum += new Vector<int>(pixelVector[k]);
+                    greenSum += new Vector<int>(pixelVector[k + 1]);
+                    redSum += new Vector<int>(pixelVector[k + 2]);
+                }
             }
-            else if (greenSum > redSum && greenSum > blueSum)
+
+            // Sum up each channel
+            int totalRed = 0, totalGreen = 0, totalBlue = 0;
+            for (int j = 0; j < Vector<int>.Count; j++)
             {
-                message = "Green";
+                totalRed += redSum[j];
+                totalGreen += greenSum[j];
+                totalBlue += blueSum[j];
             }
+
+            // Handle remaining pixels
+            for (; i < totalBytes; i += 4)
+            {
+                totalBlue += pixels[i];
+                totalGreen += pixels[i + 1];
+                totalRed += pixels[i + 2];
+            }
+
+            // Determine dominant channel (0=Red, 1=Green, 2=Blue)
+            if (totalRed > totalGreen && totalRed > totalBlue)
+                *result = 0;
+            else if (totalGreen > totalRed && totalGreen > totalBlue)
+                *result = 1;
             else
-            {
-                message = "Blue";
-            }
-
-            return "The most used channel is " + message;
-        }
-
-        private byte[] ImageToBitArray(Bitmap bitmap)
-        {
-            int width = bitmap.Width;
-            int height = bitmap.Height;
-            byte[] bits = new byte[width * height * 3];
-
-            BitmapData bmpData = bitmap.LockBits(
-                new Rectangle(0, 0, width, height),
-                ImageLockMode.ReadOnly,
-                PixelFormat.Format24bppRgb);
-
-            unsafe
-            {
-                byte* ptr = (byte*)bmpData.Scan0;
-                int index = 0;
-
-                for (int y = 0; y < height; y++)
-                {
-                    for (int x = 0; x < width; x++)
-                    {
-                        bits[index++] = ptr[2];
-                        bits[index++] = ptr[1];
-                        bits[index++] = ptr[0];
-                        ptr += 3;
-                    }
-                    ptr += bmpData.Stride - (width * 3);
-                }
-            }
-
-            bitmap.UnlockBits(bmpData);
-            return bits;
+                *result = 2;
         }
     }
 }

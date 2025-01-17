@@ -25,10 +25,11 @@ namespace ColorsExtractorASM
         private static extern void CalculateAverageBrightness(byte* pixels, int pixelCount, int* sum);
 
         [DllImport(@"C:\Users\SQ299\Source\Repos\ColorExtractorASM\x64\Debug\JAAsm.dll")]
-        private static extern int CalculateTemperature(byte* data, int length);
+        private static extern void CalculateTemperature(byte* pixels, int pixelCount, int* sum);
 
         [DllImport(@"C:\Users\SQ299\Source\Repos\ColorExtractorASM\x64\Debug\JAAsm.dll")]
-        private static extern int CalculateDominantChannel(byte* data, int length);
+        private static extern void CalculateDominantChannel(byte* pixels, int pixelCount, int* sum);
+
 
         public bool asmChecked { get; set; } = false;
 
@@ -39,24 +40,52 @@ namespace ColorsExtractorASM
             {
                 totalBrightness = ProcessImageSegments(bitmap, threadCount, analyzerRegular.AnalyzeBrightnessRegular);
             }
+            else
+            {
+                totalBrightness = ProcessImageSegments(bitmap, threadCount, CalculateAverageBrightness);
+            }
 
             totalBrightness = ProcessImageSegments(bitmap, threadCount, CalculateAverageBrightness);
-            //double averageBrightness = totalBrightness / (double)(bitmap.Width * bitmap.Height * 3);
 
             return totalBrightness < 128 ? $"Dark {totalBrightness:F2}" : $"Bright {totalBrightness:F2}";
         }
 
-        //private unsafe string AnalyzeTemperature(Bitmap bitmap, int threadCount)
-        //{
-        //    if (!asmChecked)
-        //    {
-        //        return analyzerRegular.AnalyzeTemperatureRegular(bitmap, threadCount);
-        //    }
+        private unsafe string AnalyzeTemperature(Bitmap bitmap, int threadCount)
+        {
+            double temperature = 0.0;
+            if (!asmChecked)
+            {
+                temperature = ProcessImageSegments(bitmap, threadCount, analyzerRegular.AnalyzeTemperatureRegular);
+            }
+            else
+            {
+                temperature = ProcessImageSegments(bitmap, threadCount, CalculateTemperature);
+            }
 
-        //    int temperatureSum = ProcessImageSegments(bitmap, threadCount, CalculateTemperature);
+            return temperature < 0 ? $"Cold {temperature:F2}" : $"Warm {temperature:F2}";
+        }
 
-        //    return temperatureSum > 0 ? $"Warm {temperatureSum}" : $"Cold {temperatureSum}";
-        //}
+        public unsafe string AnalyzeDominantChannel(Bitmap bitmap, int threadCount)
+        {
+            double channelIndex = 0.0;
+            if (!asmChecked)
+            {
+                channelIndex = ProcessImageSegments(bitmap, threadCount, analyzerRegular.AnalyzeDominantChannelRegular);
+            }
+            else
+            {
+                channelIndex = ProcessImageSegments(bitmap, threadCount, CalculateDominantChannel);
+            }
+
+            string dominantChannel = channelIndex switch
+            {
+                0 => "Red",
+                1 => "Green",
+                _ => "Blue"
+            };
+
+            return $"The most used channel is {dominantChannel}";
+        }
 
         private unsafe double ProcessImageSegments(Bitmap image, int threadCount, AsmProcessDelegate processFunction)
         {
@@ -126,8 +155,8 @@ namespace ColorsExtractorASM
             string result = analysisType switch
             {
                 "Dark / Bright" => AnalyzeBrightness(bitmap, threadCount),
-                //"Warm / Cold" => AnalyzeTemperature(bitmap, threadCount),
-                // "Red / Green / Blue" => AnalyzeDominantChannel(bitmap, threadCount),
+                "Warm / Cold" => AnalyzeTemperature(bitmap, threadCount),
+                "Red / Green / Blue" => AnalyzeDominantChannel(bitmap, threadCount),
                 _ => throw new InvalidOperationException("Invalid analysis type")
             };
 
@@ -159,8 +188,8 @@ namespace ColorsExtractorASM
                     result = analysisType switch
                     {
                         "Dark / Bright" => AnalyzeBrightness(bitmap, threadCount),
-                        // "Warm / Cold" => AnalyzeTemperature(ImageToBitArray(bitmap), bitmap.Width, bitmap.Height, threadCount),
-                        // "Red / Green / Blue" => AnalyzeDominantChannel(ImageToBitArray(bitmap), bitmap.Width, bitmap.Height, threadCount),
+                        "Warm / Cold" => AnalyzeTemperature(bitmap, threadCount),
+                        "Red / Green / Blue" => AnalyzeDominantChannel(bitmap, threadCount),
                         _ => throw new InvalidOperationException("Invalid analysis type")
                     };
 
