@@ -20,6 +20,8 @@ namespace ColorsExtractorASM
         private AnalyzerRegular analyzerRegular = new AnalyzerRegular();
 
         private delegate void AsmProcessDelegate(byte* pixels, int pixelCount, int* sum);
+        private delegate void AsmProcessDelegateDominant(byte* pixels, int pixelCount, int* totalRed, int* totalGreen, int* totalBlue);
+
 
         [DllImport(@"C:\Users\SQ299\Source\Repos\ColorExtractorASM\x64\Debug\JAAsm.dll")]
         private static extern void CalculateAverageBrightness(byte* pixels, int pixelCount, int* sum);
@@ -28,7 +30,7 @@ namespace ColorsExtractorASM
         private static extern void CalculateTemperature(byte* pixels, int pixelCount, int* sum);
 
         [DllImport(@"C:\Users\SQ299\Source\Repos\ColorExtractorASM\x64\Debug\JAAsm.dll")]
-        private static extern void CalculateDominantChannel(byte* pixels, int pixelCount, int* sum);
+        private static extern void CalculateDominantChannel(byte* pixels, int pixelCount, int* redSum, int* greenSum, int* blueSum);
 
 
         public bool asmChecked { get; set; } = false;
@@ -54,11 +56,14 @@ namespace ColorsExtractorASM
 
         private unsafe string AnalyzeDominantChannel(Bitmap bitmap, int threadCount)
         {
-            double channelIndex = asmChecked
-                ? ProcessImageSegments(bitmap, threadCount, CalculateDominantChannel, "DominantChannel")
-                : ProcessImageSegments(bitmap, threadCount, analyzerRegular.AnalyzeDominantChannelRegular, "DominantChannel");
+            var (totalRed, totalGreen, totalBlue) = asmChecked
+                ? ProcessImageSegmentsDominant(bitmap, threadCount, CalculateDominantChannel, "DominantChannel")
+                : ProcessImageSegmentsDominant(bitmap, threadCount, analyzerRegular.AnalyzeDominantChannelRegular, "DominantChannel");
 
-            string dominantChannel = channelIndex switch
+            int maxChannelIndex = totalRed > totalGreen && totalRed > totalBlue ? 0 :
+                                  totalGreen > totalRed && totalGreen > totalBlue ? 1 : 2;
+
+            string dominantChannel = maxChannelIndex switch
             {
                 0 => "Red",
                 1 => "Green",
@@ -68,14 +73,66 @@ namespace ColorsExtractorASM
             return $"The most used channel is {dominantChannel}";
         }
 
+        private unsafe (long red, long green, long blue) ProcessImageSegmentsDominant(Bitmap image, int threadCount, AsmProcessDelegateDominant processFunction, string analysisType)
+        {
+            //if (threadCount <= 0)
+            //    threadCount = Environment.ProcessorCount;
+            //else
+            //    threadCount = Math.Min(threadCount, Environment.ProcessorCount);
+
+            int imageWidth = image.Width;
+            int imageHeight = image.Height;
+
+            if (imageWidth == 0 || imageHeight == 0)
+                return (0, 0, 0);
+
+            BitmapData bitmapData = image.LockBits(
+                new Rectangle(0, 0, imageWidth, imageHeight),
+                ImageLockMode.ReadOnly,
+                PixelFormat.Format32bppArgb);
+
+            try
+            {
+                ConcurrentBag<(long red, long green, long blue)> channelSums = new ConcurrentBag<(long, long, long)>();
+
+                int chunkHeight = 10; // Process in 10-row chunks
+                int totalChunks = (imageHeight + chunkHeight - 1) / chunkHeight;
+
+                Parallel.For(0, totalChunks, chunkIndex =>
+                {
+                    int startY = chunkIndex * chunkHeight;
+                    int endY = Math.Min(startY + chunkHeight, imageHeight);
+                    int pixelsInChunk = (endY - startY) * imageWidth;
+
+                    if (pixelsInChunk > 0)
+                    {
+                        byte* startPtr = (byte*)bitmapData.Scan0 + (startY * bitmapData.Stride);
+                        int localRed = 0, localGreen = 0, localBlue = 0;
+                        processFunction(startPtr, pixelsInChunk, &localRed, &localGreen, &localBlue);
+                        channelSums.Add((localRed, localGreen, localBlue));
+                    }
+                });
+
+                long totalRed = channelSums.Sum(c => c.red);
+                long totalGreen = channelSums.Sum(c => c.green);
+                long totalBlue = channelSums.Sum(c => c.blue);
+
+                return (totalRed, totalGreen, totalBlue);
+            }
+            finally
+            {
+                image.UnlockBits(bitmapData);
+            }
+        }
+
 
         private unsafe double ProcessImageSegments(Bitmap image, int threadCount, AsmProcessDelegate processFunction, string analysisType)
         {
             // Validate and adjust thread count
-            if (threadCount <= 0)
-                threadCount = Environment.ProcessorCount;
-            else
-                threadCount = Math.Min(threadCount, Environment.ProcessorCount);
+            //if (threadCount <= 0)
+            //    threadCount = Environment.ProcessorCount;
+            //else
+            //    threadCount = Math.Min(threadCount, Environment.ProcessorCount);
 
             int imageWidth = image.Width;
             int imageHeight = image.Height;

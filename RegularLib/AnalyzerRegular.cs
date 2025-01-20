@@ -54,31 +54,25 @@ namespace RegularLib
         }
 
         // Method to calculate dominant channel
-        public unsafe void AnalyzeDominantChannelRegular(byte* pixels, int pixelCount, int* result)
-        {
-            int totalRed = 0, totalGreen = 0, totalBlue = 0;
 
-            // Process each pixel
+        public unsafe void AnalyzeDominantChannelRegular(byte* pixels, int pixelCount, int* totalRed, int* totalGreen, int* totalBlue)
+        {
+            int redSum = 0, greenSum = 0, blueSum = 0;
+
             for (int i = 0; i < pixelCount; i++)
             {
-                // BGRA format: blue, green, red, alpha
-                byte blue = pixels[i * 4];      // Blue channel
-                byte green = pixels[i * 4 + 1]; // Green channel
-                byte red = pixels[i * 4 + 2];   // Red channel
+                byte blue = pixels[i * 4];
+                byte green = pixels[i * 4 + 1];
+                byte red = pixels[i * 4 + 2];
 
-                // Accumulate the sum of each channel
-                totalBlue += blue;
-                totalGreen += green;
-                totalRed += red;
+                blueSum += blue;
+                greenSum += green;
+                redSum += red;
             }
 
-            // Determine the dominant channel
-            if (totalRed > totalGreen && totalRed > totalBlue)
-                *result = 0; // Red is dominant
-            else if (totalGreen > totalRed && totalGreen > totalBlue)
-                *result = 1; // Green is dominant
-            else
-                *result = 2; // Blue is dominant
+            *totalRed = redSum;
+            *totalGreen = greenSum;
+            *totalBlue = blueSum;
         }
     }
 }

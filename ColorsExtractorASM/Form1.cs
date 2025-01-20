@@ -19,7 +19,7 @@ namespace ColorsExtractorASM
             InitializeComponent();
 
             // Configure TrackBar
-            trackBar1.Minimum = 0;
+            trackBar1.Minimum = 1;
             trackBar1.Maximum = 64;
             trackBar1.TickFrequency = 1;
             trackBar1.SmallChange = 1;
@@ -131,7 +131,7 @@ namespace ColorsExtractorASM
 
             // Paths for the three photos (relative to the project directory)
             string[] photoPaths = {
-                Path.Combine(projectDirectory, @"zdjecie_slaba_jakosc.jpg"),
+                Path.Combine(projectDirectory, @"zielony.jpg"),
                 Path.Combine(projectDirectory, @"zdjecie_medium_jakosc.jpg"),
                 Path.Combine(projectDirectory, @"zdjecie_top_jakosc.jpg")
             };

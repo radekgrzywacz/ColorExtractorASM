@@ -129,91 +129,66 @@ CalculateTemperature endp
 CalculateDominantChannel proc
     push rbp
     mov rbp, rsp
-    sub rsp, 24                 ; Reserve space for local variables
-    
+
+    ; Save the fifth parameter pointer
+    mov r10, qword ptr [rbp + 48]  ; Access 5th parameter (blue sum pointer)
+
     ; Initialize accumulators to zero
     vxorps ymm0, ymm0, ymm0    ; red sum
     vxorps ymm1, ymm1, ymm1    ; green sum
     vxorps ymm2, ymm2, ymm2    ; blue sum
-    
+
     ; Process 8 pixels at a time
     mov rax, rdx
-    shr rax, 3                  ; divide by 8
-    
-    xor r9, r9                  ; counter
-    
+    shr rax, 3                  ; divide pixel count by 8
+
+    xor r11, r11               ; loop counter (using r11 instead of r9 since r9 is parameter)
+
 process_loop:
-    cmp r9, rax
+    cmp r11, rax
     jge cleanup
-    
+
     ; Load 8 pixels into YMM3
-    vmovdqu ymm3, ymmword ptr [rcx + r9*4]
-    
+    vmovdqu ymm3, ymmword ptr [rcx + r11*4]
+
     ; Extract and sum each channel (BGRA format)
-    vpand ymm4, ymm3, [mask_blue]   ; Extract blue (index 0)
+    vpand ymm4, ymm3, [mask_blue]   ; Extract blue
     vpaddd ymm2, ymm2, ymm4         ; Add to blue sum
-    
-    vpand ymm4, ymm3, [mask_green]  ; Extract green (index 1)
+
+    vpand ymm4, ymm3, [mask_green]  ; Extract green
     vpsrld ymm4, ymm4, 8
     vpaddd ymm1, ymm1, ymm4         ; Add to green sum
-    
-    vpand ymm4, ymm3, [mask_red]    ; Extract red (index 2)
+
+    vpand ymm4, ymm3, [mask_red]    ; Extract red
     vpsrld ymm4, ymm4, 16
     vpaddd ymm0, ymm0, ymm4         ; Add to red sum
-    
-    inc r9
+
+    inc r11
     jmp process_loop
-    
+
 cleanup:
-    ; Horizontal sum for each channel
+    ; Calculate final sums and store in respective pointers
+    ; Red sum
     vextracti128 xmm3, ymm0, 1
     vpaddd xmm0, xmm0, xmm3
     vphaddd xmm0, xmm0, xmm0
     vphaddd xmm0, xmm0, xmm0
-    vmovd dword ptr [rsp], xmm0     ; Store red sum
-    
+    vmovd dword ptr [r8], xmm0      ; Store red sum to first pointer
+
+    ; Green sum
     vextracti128 xmm3, ymm1, 1
     vpaddd xmm1, xmm1, xmm3
     vphaddd xmm1, xmm1, xmm1
     vphaddd xmm1, xmm1, xmm1
-    vmovd dword ptr [rsp + 8], xmm1 ; Store green sum
-    
+    vmovd dword ptr [r9], xmm1      ; Store green sum to second pointer
+
+    ; Blue sum
     vextracti128 xmm3, ymm2, 1
     vpaddd xmm2, xmm2, xmm3
     vphaddd xmm2, xmm2, xmm2
     vphaddd xmm2, xmm2, xmm2
-    vmovd dword ptr [rsp + 16], xmm2; Store blue sum
-    
-    ; Load the sums
-    mov eax, dword ptr [rsp]        ; red
-    mov ecx, dword ptr [rsp + 8]    ; green
-    mov edx, dword ptr [rsp + 16]   ; blue
-    
-    ; Exact same logic as C# version
-    ; if (totalRed > totalGreen && totalRed > totalBlue)
-    xor r10d, r10d                  ; Initialize result to 0 (red)
-    cmp eax, ecx                    ; Compare red with green
-    jle check_green                 ; If red <= green, check green
-    cmp eax, edx                    ; Compare red with blue
-    jle check_green                 ; If red <= blue, check green
-    jmp store_result                ; Red is dominant
-    
-check_green:
-    ; else if (totalGreen > totalRed && totalGreen > totalBlue)
-    cmp ecx, eax                    ; Compare green with red
-    jle blue_dominant              ; If green <= red, blue is dominant
-    cmp ecx, edx                    ; Compare green with blue
-    jle blue_dominant              ; If green <= blue, blue is dominant
-    mov r10d, 1                     ; Green is dominant
-    jmp store_result
-    
-blue_dominant:
-    mov r10d, 2                     ; Blue is dominant
-    
-store_result:
-    mov dword ptr [r8], r10d        ; Store final result
-    
-    add rsp, 24                     ; Clean up stack
+    vmovd dword ptr [r10], xmm2     ; Store blue sum to third pointer
+
     pop rbp
     ret
 CalculateDominantChannel endp
