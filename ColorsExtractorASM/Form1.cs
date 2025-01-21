@@ -131,7 +131,7 @@ namespace ColorsExtractorASM
 
             // Paths for the three photos (relative to the project directory)
             string[] photoPaths = {
-                Path.Combine(projectDirectory, @"zielony.jpg"),
+                Path.Combine(projectDirectory, @"niebieski.png"),
                 Path.Combine(projectDirectory, @"zdjecie_medium_jakosc.jpg"),
                 Path.Combine(projectDirectory, @"zdjecie_top_jakosc.jpg")
             };

@@ -41,7 +41,7 @@ namespace ColorsExtractorASM
                 ? ProcessImageSegments(bitmap, threadCount, CalculateAverageBrightness, "Brightness")
                 : ProcessImageSegments(bitmap, threadCount, analyzerRegular.AnalyzeBrightnessRegular, "Brightness");
 
-            return totalBrightness < 128 ? $"Dark {totalBrightness:F2}" : $"Bright {totalBrightness:F2}";
+            return totalBrightness < 128 ? $"Dark" : $"Bright";
         }
 
         private unsafe string AnalyzeTemperature(Bitmap bitmap, int threadCount)
@@ -50,7 +50,7 @@ namespace ColorsExtractorASM
                 ? ProcessImageSegments(bitmap, threadCount, CalculateTemperature, "Temperature")
                 : ProcessImageSegments(bitmap, threadCount, analyzerRegular.AnalyzeTemperatureRegular, "Temperature");
 
-            return temperature < 0 ? $"Cold {temperature:F2}" : $"Warm {temperature:F2}";
+            return temperature < 0 ? $"Cold" : $"Warm";
         }
 
 
@@ -75,11 +75,6 @@ namespace ColorsExtractorASM
 
         private unsafe (long red, long green, long blue) ProcessImageSegmentsDominant(Bitmap image, int threadCount, AsmProcessDelegateDominant processFunction, string analysisType)
         {
-            //if (threadCount <= 0)
-            //    threadCount = Environment.ProcessorCount;
-            //else
-            //    threadCount = Math.Min(threadCount, Environment.ProcessorCount);
-
             int imageWidth = image.Width;
             int imageHeight = image.Height;
 
@@ -128,12 +123,6 @@ namespace ColorsExtractorASM
 
         private unsafe double ProcessImageSegments(Bitmap image, int threadCount, AsmProcessDelegate processFunction, string analysisType)
         {
-            // Validate and adjust thread count
-            //if (threadCount <= 0)
-            //    threadCount = Environment.ProcessorCount;
-            //else
-            //    threadCount = Math.Min(threadCount, Environment.ProcessorCount);
-
             int imageWidth = image.Width;
             int imageHeight = image.Height;
 
@@ -152,7 +141,7 @@ namespace ColorsExtractorASM
                 ConcurrentBag<long> sums = new ConcurrentBag<long>();
 
                 // Define chunk size for dynamic load balancing
-                int chunkHeight = 10; // Process 10 rows per chunk for better distribution
+                int chunkHeight = 10;
                 int totalChunks = (imageHeight + chunkHeight - 1) / chunkHeight;
 
                 Parallel.For(0, totalChunks, chunkIndex =>
@@ -164,22 +153,19 @@ namespace ColorsExtractorASM
                     if (pixelsInChunk > 0)
                     {
                         byte* startPtr = (byte*)bitmapData.Scan0 + (startY * bitmapData.Stride);
-                        // Inside Parallel.For
-                        int localSum = 0; // Change from long to int
+                        int localSum = 0; 
                         processFunction(startPtr, pixelsInChunk, &localSum);
                         sums.Add(localSum);
                     }
                 });
 
-                // Aggregate all partial results
                 long totalSum = sums.Sum();
 
-                // Adjust the final result based on the analysis type
                 return analysisType switch
                 {
-                    "Brightness" => totalSum / (double)(totalPixels * 3), // Average of all RGB components
-                    "Temperature" => totalSum / (double)(totalPixels),    // Average R-B difference per pixel
-                    "DominantChannel" => totalSum,                        // No division needed
+                    "Brightness" => totalSum / (double)(totalPixels * 3),
+                    "Temperature" => totalSum / (double)(totalPixels),    
+                    "DominantChannel" => totalSum,                        
                     _ => throw new InvalidOperationException("Invalid analysis type")
                 };
             }
